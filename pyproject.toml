@@ -29,7 +29,7 @@ studio-mcp = "studio_mcp.server:main"
 studio-mcp-setup = "studio_mcp.setup_cli:main"
 
 [project.urls]
-Homepage = "https://github.com/jaretarnold/studio-mcp"
+Homepage = "https://github.com/musharna/studio-mcp"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/studio_mcp"]

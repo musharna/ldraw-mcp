@@ -1,10 +1,26 @@
-# studio-mcp
+<div align="center">
 
-**Give your MCP client eyes for LEGO models.** An MCP server that renders
-LDraw files (`.ldr` / `.mpd` / `.dat`) to images with real part geometry —
-studs, slopes, window glass — using headless Blender and the ImportLDraw
-addon. The result looks like a BrickLink Stud.io render, with no GUI
-anywhere in the loop.
+# ldraw-mcp
+
+**Give your MCP client eyes for LEGO® models.**
+
+Render LDraw files (`.ldr` / `.mpd` / `.dat`) to images with *real part
+geometry* — studs, slopes, window glass — using headless Blender and the
+ImportLDraw addon. The output looks like a BrickLink Stud.io render, with no
+GUI anywhere in the loop.
+
+[![PyPI](https://img.shields.io/pypi/v/ldraw-mcp?color=%230a7bbb&label=PyPI)](https://pypi.org/project/ldraw-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/ldraw-mcp)](https://pypi.org/project/ldraw-mcp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-server-8A2BE2.svg)](https://modelcontextprotocol.io)
+
+<img src="docs/hero.png" alt="Two rendered views of a red LEGO car — real studs, transparent glass, rubber tires, steering wheel" width="100%">
+
+<sub>A ~90-line <code>.ldr</code> rendered front-left and rear-right — actual bricks, not a geometric proxy.</sub>
+
+</div>
+
+---
 
 Point a vision-capable model at a build and it sees the actual bricks:
 crossed rotation matrices, floating plates, sunken windows — the kinds of
@@ -14,20 +30,20 @@ export bugs a geometric proxy render will happily hide.
 
 ```bash
 # 1. install
-pip install -e .
+pip install ldraw-mcp
 
 # 2. install the LDraw parts library + ImportLDraw addon
-studio-mcp-setup
+ldraw-mcp-setup
 
 # 3. register with Claude Code
-claude mcp add studio -- studio-mcp
+claude mcp add ldraw -- ldraw-mcp
 ```
 
 Then ask things like *"render output/build.ldr and tell me what looks
 wrong"* — the model sees the render, not just the text.
 
-Blender is a prerequisite (see [Requirements](#requirements)); it is not
-installed by `studio-mcp-setup`.
+> **Blender is a prerequisite** (see [Requirements](#requirements)); it is
+> not installed by `ldraw-mcp-setup`.
 
 ## Tools
 
@@ -43,25 +59,25 @@ rendered and the views are stitched horizontally. Elevation is fixed at
 
 ## Requirements
 
-- **Blender 4.x** on `PATH`, or point `STUDIO_MCP_BLENDER` at the binary.
+- **Blender 4.x** on `PATH`, or point `LDRAW_MCP_BLENDER` at the binary.
   Install it yourself (package manager, blender.org, or a local build);
-  `studio-mcp-setup` does not install Blender.
+  `ldraw-mcp-setup` does not install Blender.
 - **ImportLDraw addon** (`io_scene_importldraw`) in Blender's addons dir —
-  installed by `studio-mcp-setup`.
+  installed by `ldraw-mcp-setup`.
 - **LDraw parts library** at `~/.ldraw` (or `LDRAW_LIBRARY_PATH`) —
-  installed by `studio-mcp-setup`.
+  installed by `ldraw-mcp-setup`.
 
 ### Environment variables
 
 | var | meaning |
 |---|---|
-| `STUDIO_MCP_BLENDER` | Path to the blender binary (overrides `PATH` lookup) |
-| `STUDIO_MCP_DISABLE` | Set to `1` to force `is_available()` to `False` |
+| `LDRAW_MCP_BLENDER` | Path to the blender binary (overrides `PATH` lookup) |
+| `LDRAW_MCP_DISABLE` | Set to `1` to force `is_available()` to `False` |
 | `LDRAW_LIBRARY_PATH` | Path to the LDraw parts library (community convention) |
 
 ### Manual setup
 
-If `studio-mcp-setup` can't detect things automatically:
+If `ldraw-mcp-setup` can't detect things automatically:
 
 - **LDraw library:** download
   [complete.zip](https://library.ldraw.org/library/updates/complete.zip)
@@ -74,7 +90,7 @@ If `studio-mcp-setup` can't detect things automatically:
 
 ## Troubleshooting
 
-- **`check_renderer` says NOT FOUND:** run `studio-mcp-setup`, or set the
+- **`check_renderer` says NOT FOUND:** run `ldraw-mcp-setup`, or set the
   relevant env var above.
 - **No GPU / WSL2 / containers:** rendering uses **Cycles on CPU**, which
   works headless everywhere — no GPU or display needed. A ~150-part model
@@ -88,13 +104,19 @@ If `studio-mcp-setup` can't detect things automatically:
 
 ## Provenance
 
-This renderer was extracted from the
-[prompt2brick](https://github.com/) project, where it started life as the
-vision critic's "see the actual model" path. prompt2brick keeps its own
-vendored copy of the render wrapper and Blender script, but **this repo is
-the canonical source going forward** — fixes and improvements to the
-renderer should land here first and be ported back into prompt2brick.
+This renderer was extracted from the **prompt2brick** project, where it
+started life as the vision critic's "see the actual model" path.
+prompt2brick keeps its own vendored copy of the render wrapper and Blender
+script, but **this repo is the canonical source going forward** — fixes and
+improvements to the renderer should land here first and be ported back into
+prompt2brick.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+<sub>LEGO® is a trademark of the LEGO Group, which does not sponsor,
+authorize, or endorse this project. This tool is not affiliated with the
+LEGO Group, BrickLink, or the LDraw.org organization.</sub>

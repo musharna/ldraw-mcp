@@ -4,7 +4,7 @@ import asyncio
 
 from mcp.shared.memory import create_connected_server_and_client_session as connect
 
-from studio_mcp.server import mcp
+from ldraw_mcp.server import mcp
 
 
 async def _exercise():

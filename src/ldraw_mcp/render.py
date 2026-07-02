@@ -1,5 +1,5 @@
 """
-Studio-quality LDraw rendering via headless Blender + ImportLDraw.
+High-quality LDraw rendering via headless Blender + ImportLDraw.
 
 The 'see the actual model' protocol: point at an LDraw model, render it
 with real part geometry (studs, slopes, window glass) in Blender, and
@@ -7,11 +7,11 @@ stitch the views into one PNG.
 
 Availability requires: a blender binary, the io_scene_importldraw addon,
 and an LDraw parts library (~/.ldraw). Everything degrades gracefully:
-callers check is_available() or catch StudioRenderError.
+callers check is_available() or catch LDrawRenderError.
 
 Environment variables:
-  STUDIO_MCP_BLENDER   path to the blender binary (overrides PATH lookup)
-  STUDIO_MCP_DISABLE   set to "1" to force is_available() to False
+  LDRAW_MCP_BLENDER   path to the blender binary (overrides PATH lookup)
+  LDRAW_MCP_DISABLE   set to "1" to force is_available() to False
   LDRAW_LIBRARY_PATH   path to the LDraw parts library
 """
 
@@ -26,12 +26,12 @@ BLENDER_SCRIPT = Path(__file__).parent / "blender_script.py"
 DEFAULT_AZIMUTHS = (-60.0, 120.0)
 
 
-class StudioRenderError(Exception):
+class LDrawRenderError(Exception):
     """Blender render failed or is unavailable."""
 
 
 def find_blender() -> Optional[str]:
-    env = os.environ.get("STUDIO_MCP_BLENDER")
+    env = os.environ.get("LDRAW_MCP_BLENDER")
     if env and Path(env).exists():
         return env
     found = shutil.which("blender")
@@ -52,7 +52,7 @@ def ldraw_library_dir() -> Optional[Path]:
 
 
 def is_available() -> bool:
-    if os.environ.get("STUDIO_MCP_DISABLE") == "1":
+    if os.environ.get("LDRAW_MCP_DISABLE") == "1":
         return False
     return find_blender() is not None and ldraw_library_dir() is not None
 
@@ -69,9 +69,9 @@ def render_ldraw(
     blender = find_blender()
     library = ldraw_library_dir()
     if blender is None or library is None:
-        raise StudioRenderError(
-            "studio render unavailable (need blender + ImportLDraw addon "
-            "+ LDraw library in ~/.ldraw; run `studio-mcp-setup`)"
+        raise LDrawRenderError(
+            "render unavailable (need blender + ImportLDraw addon "
+            "+ LDraw library in ~/.ldraw; run `ldraw-mcp-setup`)"
         )
     with tempfile.TemporaryDirectory() as td:
         prefix = str(Path(td) / "view")
@@ -99,12 +99,12 @@ def render_ldraw(
                 cmd, capture_output=True, text=True, timeout=timeout
             )
         except subprocess.TimeoutExpired:
-            raise StudioRenderError(f"blender render timed out after {timeout}s")
+            raise LDrawRenderError(f"blender render timed out after {timeout}s")
         views = [Path(f"{prefix}_{i}.png") for i in range(len(azimuths))]
         missing = [v for v in views if not v.exists()]
         if proc.returncode != 0 or missing:
             tail = "\n".join((proc.stdout + proc.stderr).splitlines()[-15:])
-            raise StudioRenderError(
+            raise LDrawRenderError(
                 f"blender render failed (exit {proc.returncode}, "
                 f"missing {len(missing)} view(s)):\n{tail}"
             )

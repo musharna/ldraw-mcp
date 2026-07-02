@@ -8,3 +8,6 @@ dist/
 .venv/
 venv/
 *.png
+
+# tracked README asset (overrides *.png)
+!docs/hero.png

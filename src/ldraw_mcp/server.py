@@ -1,5 +1,5 @@
 """
-studio-mcp server — render LDraw models to images over MCP.
+ldraw-mcp server — render LDraw models to images over MCP.
 
 Tools:
   render_ldraw_file(path, ...)  -> PNG image of the model
@@ -7,17 +7,17 @@ Tools:
   check_renderer()              -> availability diagnostics
 
 Run (stdio):
-  studio-mcp
-  python -m studio_mcp.server
+  ldraw-mcp
+  python -m ldraw_mcp.server
 
 Register with Claude Code:
-  claude mcp add studio -- studio-mcp
+  claude mcp add ldraw -- ldraw-mcp
 
 Requirements (see README.md):
-  - Blender on PATH (or STUDIO_MCP_BLENDER)
+  - Blender on PATH (or LDRAW_MCP_BLENDER)
   - ImportLDraw addon installed in Blender
   - LDraw parts library at ~/.ldraw (or LDRAW_LIBRARY_PATH)
-  Run `studio-mcp-setup` to install the library + addon.
+  Run `ldraw-mcp-setup` to install the library + addon.
 """
 
 import tempfile
@@ -25,20 +25,20 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP, Image
 
-from . import render as studio_render
+from . import render as ldraw_render
 
-mcp = FastMCP("studio")
+mcp = FastMCP("ldraw")
 
 
 @mcp.tool()
 def check_renderer() -> str:
     """Report whether the LDraw rendering stack is available and why not."""
-    blender = studio_render.find_blender()
-    library = studio_render.ldraw_library_dir()
+    blender = ldraw_render.find_blender()
+    library = ldraw_render.ldraw_library_dir()
     lines = [
-        f"blender: {blender or 'NOT FOUND (install Blender or set STUDIO_MCP_BLENDER)'}",
-        f"ldraw library: {library or 'NOT FOUND (run studio-mcp-setup or set LDRAW_LIBRARY_PATH)'}",
-        f"available: {studio_render.is_available()}",
+        f"blender: {blender or 'NOT FOUND (install Blender or set LDRAW_MCP_BLENDER)'}",
+        f"ldraw library: {library or 'NOT FOUND (run ldraw-mcp-setup or set LDRAW_LIBRARY_PATH)'}",
+        f"available: {ldraw_render.is_available()}",
     ]
     return "\n".join(lines)
 
@@ -47,7 +47,7 @@ def _render(ldr_path: str, azimuths: str, resolution: int, samples: int) -> Imag
     azims = [float(a) for a in azimuths.split(",")]
     with tempfile.TemporaryDirectory() as td:
         out = str(Path(td) / "render.png")
-        studio_render.render_ldraw(
+        ldraw_render.render_ldraw(
             ldr_path, out, azimuths=azims, resolution=resolution, samples=samples
         )
         return Image(data=Path(out).read_bytes(), format="png")

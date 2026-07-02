@@ -1,5 +1,5 @@
 """
-studio-mcp-setup — install the LDraw parts library and the ImportLDraw
+ldraw-mcp-setup — install the LDraw parts library and the ImportLDraw
 Blender addon so the renderer can run.
 
 What it does:
@@ -133,7 +133,7 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
             "[addon] no Blender addons directory detected under "
             "~/.config/blender/<version>/scripts/addons/.\n"
             "[addon] manual step: launch Blender once (creates the config dir), "
-            "then re-run studio-mcp-setup, OR install the addon by hand:\n"
+            "then re-run ldraw-mcp-setup, OR install the addon by hand:\n"
             f"          download the latest release zip from {IMPORTLDRAW_RELEASES_PAGE}\n"
             "          and use Blender > Edit > Preferences > Add-ons > Install."
         )
@@ -166,7 +166,7 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
 
     _log(f"[addon] downloading {asset_url} ...")
     try:
-        req = urllib.request.Request(asset_url, headers={"User-Agent": "studio-mcp"})
+        req = urllib.request.Request(asset_url, headers={"User-Agent": "ldraw-mcp"})
         with urllib.request.urlopen(req) as resp:
             data = resp.read()
     except Exception as exc:  # noqa: BLE001
@@ -204,7 +204,7 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="studio-mcp-setup",
+        prog="ldraw-mcp-setup",
         description="Install the LDraw parts library and ImportLDraw Blender addon.",
     )
     parser.add_argument(
@@ -228,8 +228,8 @@ def main() -> None:
 
     _log("")
     if ok:
-        _log("Setup complete. Verify with:  studio-mcp   (then call check_renderer)")
-        _log("Or:  python -c \"from studio_mcp.render import is_available; print(is_available())\"")
+        _log("Setup complete. Verify with:  ldraw-mcp   (then call check_renderer)")
+        _log("Or:  python -c \"from ldraw_mcp.render import is_available; print(is_available())\"")
     else:
         _log("Setup finished with warnings — see messages above for manual steps.")
         sys.exit(1)

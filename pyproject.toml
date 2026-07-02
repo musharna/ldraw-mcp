@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ldraw-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server that renders LDraw/LEGO models to images with real part geometry via headless Blender + ImportLDraw."
 readme = "README.md"
 requires-python = ">=3.10"

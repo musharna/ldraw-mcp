@@ -1,0 +1,34 @@
+name: Publish to MCP Registry
+# Submits server.json to the official MCP registry via GitHub Actions OIDC
+# (mcp-publisher login github-oidc) -- no device flow, no stored credentials.
+# The OIDC token's repository_owner ("musharna") grants the io.github.musharna/*
+# namespace. Triggered by the vX.Y.Z tag push; the wait-for-PyPI step blocks
+# until the matching PyPI release (with its mcp-name marker) is queryable.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+jobs:
+  registry-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Wait for the PyPI release to be queryable
+        run: |
+          VER=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          for i in $(seq 1 30); do
+            if curl -fsSL "https://pypi.org/pypi/ldraw-mcp/$VER/json" >/dev/null; then
+              echo "PyPI $VER is live"; exit 0
+            fi
+            echo "waiting for PyPI $VER ($i/30)"; sleep 10
+          done
+          echo "PyPI $VER did not appear within 5 minutes"; exit 1
+      - name: Install mcp-publisher
+        run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.7.9/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      - name: Log in to the MCP registry via GitHub Actions OIDC
+        run: ./mcp-publisher login github-oidc
+      - name: Publish server.json
+        run: ./mcp-publisher publish

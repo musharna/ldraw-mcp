@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "ldraw": {
+      "command": "uvx",
+      "args": [
+        "ldraw-mcp"
+      ]
+    }
+  }
+}

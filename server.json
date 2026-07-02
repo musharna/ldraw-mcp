@@ -1,0 +1,42 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.musharna/ldraw-mcp",
+  "title": "ldraw-mcp",
+  "description": "Render LDraw/LEGO models to images with real part geometry via headless Blender + ImportLDraw",
+  "websiteUrl": "https://github.com/musharna/ldraw-mcp",
+  "repository": {
+    "url": "https://github.com/musharna/ldraw-mcp",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "ldraw-mcp",
+      "version": "0.1.1",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "LDRAW_MCP_BLENDER",
+          "description": "Path to the Blender binary (overrides PATH lookup).",
+          "isRequired": false
+        },
+        {
+          "name": "LDRAW_LIBRARY_PATH",
+          "description": "Path to the LDraw parts library (default ~/.ldraw).",
+          "isRequired": false
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "tool": "manual",
+      "version": "0.1.1"
+    }
+  }
+}

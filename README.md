@@ -20,6 +20,8 @@ GUI anywhere in the loop.
 
 </div>
 
+<!-- mcp-name: io.github.musharna/ldraw-mcp -->
+
 ---
 
 Point a vision-capable model at a build and it sees the actual bricks:

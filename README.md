@@ -13,6 +13,7 @@ GUI anywhere in the loop.
 [![Python](https://img.shields.io/pypi/pyversions/ldraw-mcp)](https://pypi.org/project/ldraw-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server-8A2BE2.svg)](https://modelcontextprotocol.io)
+[![CI](https://github.com/musharna/ldraw-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/musharna/ldraw-mcp/actions/workflows/ci.yml)
 
 <img src="docs/hero.png" alt="Two rendered views of a red LEGO car — real studs, transparent glass, rubber tires, steering wheel" width="100%">
 

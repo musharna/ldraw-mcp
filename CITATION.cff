@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use ldraw-mcp in your work, please cite it as below."
+title: ldraw-mcp
+abstract: >-
+  A Model Context Protocol (MCP) server that renders LDraw models
+  (.ldr / .mpd / .dat) to images using real part geometry — studs, slopes,
+  transparent glass, rubber tires — via headless Blender and the ImportLDraw
+  addon. It gives vision-capable language models an accurate view of a brick
+  build, so that export faults a geometric proxy render would hide (crossed
+  rotation matrices, floating plates, sunken windows) become visible.
+type: software
+authors:
+  - family-names: Arnold
+    given-names: Jaret
+    orcid: "https://orcid.org/0009-0003-4055-5238"
+repository-code: "https://github.com/musharna/ldraw-mcp"
+url: "https://pypi.org/project/ldraw-mcp/"
+license: MIT
+version: 0.1.1
+date-released: "2026-07-02"
+keywords:
+  - ldraw
+  - lego
+  - blender
+  - 3d-rendering
+  - model-context-protocol
+  - mcp

@@ -16,8 +16,8 @@ authors:
 repository-code: "https://github.com/musharna/ldraw-mcp"
 url: "https://pypi.org/project/ldraw-mcp/"
 license: MIT
-version: 0.1.1
-date-released: "2026-07-02"
+version: 0.1.2
+date-released: "2026-07-28"
 keywords:
   - ldraw
   - lego

@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "tomli; python_version < '3.11'"]
 
 [project.scripts]
 ldraw-mcp = "ldraw_mcp.server:main"

@@ -1,0 +1,26 @@
+version: 2
+# This repository had no Dependabot configuration, so nothing ever proposed an
+# update and its pinned versions could drift silently. Node 20 is removed from
+# GitHub-hosted runners on 2026-09-16, which is exactly the kind of deadline a
+# repo with no update proposals walks into unwarned.
+#
+# Minor/patch are grouped to keep PR volume low. Majors arrive individually --
+# those are the ones that carry runtime bumps and deserve their own CI run.
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-patch:
+        update-types: ["minor", "patch"]

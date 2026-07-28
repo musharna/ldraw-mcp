@@ -12,8 +12,13 @@ A version recorded in four places with nothing enforcing agreement will drift.
 from __future__ import annotations
 
 import json
-import tomllib
 from pathlib import Path
+
+# tomllib is stdlib only from 3.11; this package supports >=3.10, and CI runs 3.10.
+try:  # pragma: no cover - trivial import shim
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 import ldraw_mcp
 

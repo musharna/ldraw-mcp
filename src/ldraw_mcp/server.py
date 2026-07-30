@@ -23,11 +23,14 @@ Requirements (see README.md):
 import tempfile
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP, Image
+# mcp 2.x renamed FastMCP to MCPServer and removed mcp.server.fastmcp entirely.
+# Same class, same decorator, same kwargs — a rename, not a rewrite. Image moved
+# with it.
+from mcp.server.mcpserver import Image, MCPServer
 
 from . import render as ldraw_render
 
-mcp = FastMCP("ldraw")
+mcp = MCPServer("ldraw")
 
 
 @mcp.tool()
@@ -82,9 +85,7 @@ def render_ldraw_text(
 
     Useful for quick experiments without writing a file first.
     """
-    with tempfile.NamedTemporaryFile(
-        "w", suffix=".ldr", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".ldr", delete=False) as f:
         f.write(ldr)
         tmp = f.name
     try:

@@ -17,7 +17,12 @@ classifiers = [
     "Topic :: Multimedia :: Graphics :: 3D Rendering",
 ]
 dependencies = [
-    "mcp<2",
+    # 2.x only. The range MOVES rather than widening to <3 — which is what
+    # dependabot proposed in #7, and why that PR broke the build. This package
+    # imports mcp.server.mcpserver, absent in 1.x, so a range spanning both
+    # majors can resolve to a version that cannot import the server. mcp 2.x
+    # requires Python >=3.10, exactly this package's floor.
+    "mcp>=2,<3",
     "pillow",
 ]
 

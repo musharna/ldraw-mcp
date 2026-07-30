@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+- **Migrated to the `mcp` 2.x API** — the "separate work" 0.1.2 deferred below.
+  `FastMCP` → `mcp.server.mcpserver.MCPServer`, `Image` moved with it. The
+  dependency **moves** to `mcp>=2,<3` rather than widening to `<3`: this package
+  imports `mcp.server.mcpserver`, absent in 1.x, so a range spanning both majors
+  can resolve to a version that cannot import the server. That is precisely how
+  dependabot's `mcp<3` proposal (#7) broke the build, and why it was closed
+  rather than merged. mcp 2.x requires Python >=3.10, exactly this package's
+  floor, so the support matrix is unchanged.
+
+- **Rewrote the in-memory client test.** `create_connected_server_and_client_session`
+  is genuinely gone from `mcp.shared.memory` — the one removal in this migration
+  that needed new code rather than a rename, and the reason #7's CI failed for a
+  _second_ reason beyond the server break.
+
+  The replacement is `mcp.client.Client`, which accepts an `MCPServer` directly.
+  It is better than what it replaces on two counts: no reaching through the
+  private `_mcp_server` attribute, and the context manager initialises the
+  session so the explicit `initialize()` call disappears. It remains a real
+  client over in-memory transport rather than a direct call into the tool
+  functions, which is the point of that file.
+
+- **`__version__` now reads from installed metadata** instead of being a fourth
+  hand-maintained copy. `test_packaging.py` already guarded all four sources —
+  it exists because this repo shipped `__version__` 0.1.0 while everything else
+  said 0.1.1 — so this removes a source of drift rather than replacing the check
+  that catches it. `server.json` and `CITATION.cff` cannot be derived and are
+  still asserted.
+
 ## 0.1.2
 
 - **Fix broken installs against the `mcp` 2.0.0 SDK.** The dependency was an

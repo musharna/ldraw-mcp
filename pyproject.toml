@@ -17,7 +17,7 @@ classifiers = [
     "Topic :: Multimedia :: Graphics :: 3D Rendering",
 ]
 dependencies = [
-    "mcp<2",
+    "mcp<3",
     "pillow",
 ]
 

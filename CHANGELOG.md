@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - **Migrated to the `mcp` 2.x API** — the "separate work" 0.1.2 deferred below.
   `FastMCP` → `mcp.server.mcpserver.MCPServer`, `Image` moved with it. The

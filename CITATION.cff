@@ -16,7 +16,7 @@ authors:
 repository-code: "https://github.com/musharna/ldraw-mcp"
 url: "https://pypi.org/project/ldraw-mcp/"
 license: MIT
-version: 0.1.2
+version: 0.2.0
 date-released: "2026-07-28"
 keywords:
   - ldraw

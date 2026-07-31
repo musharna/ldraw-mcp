@@ -14,15 +14,23 @@ absence of it, delivered with a valid PNG and a zero exit code.
 
 ## What "blank" means here, measured
 
-On a single 1x1 brick, a currently-broken render gives a frame whose pixels all
-sit within **14** of one another (summed RGB distance from the corner pixel), and
-**zero** pixels differ from the background by more than 40. A frame containing a
-red brick on a grey backdrop cannot look like that: LDraw colour 4 is red, and
-red against grey 197 differs by several hundred.
+On a single 1x1 brick, the broken render gave a frame whose pixels all sat
+within **14** of one another (summed RGB distance from the corner pixel), with
+**zero** pixels differing from the background by more than 40. The fixed render
+of the same brick gives max deviation **346** and **22049** of 57600 pixels over
+the threshold.
 
 The threshold is therefore not a guess between two plausible numbers. It sits in
 an enormous empty gap between "no object" (14) and "an object of any colour at
 all" (hundreds).
+
+## The defect this caught (issue #14, fixed)
+
+The camera distance was derived from the scene bounds, but the clip planes were
+left at Blender's defaults. ImportLDraw imports at real-world metre scale, so a
+1x1 brick spans ~8 mm and the camera sat 18 mm away — *inside* the default 0.1 m
+near plane. The model was clipped away before shading and every frame rendered
+as the bare world, which AgX maps to a plausible grey. Nothing errored.
 """
 
 import tempfile
@@ -32,7 +40,11 @@ import pytest
 
 from ldraw_mcp import render as ldraw_render
 
-pytestmark = pytest.mark.skipif(
+# Only the test that actually drives Blender may be skipped for its absence.
+# This was a module-level `pytestmark`, which also skipped the control below —
+# so the one check that proves the detector can discriminate never ran on CI,
+# where Blender is never installed. A control that does not run is not a control.
+needs_renderer = pytest.mark.skipif(
     not ldraw_render.is_available(),
     reason="blender/LDraw stack not installed",
 )
@@ -56,15 +68,7 @@ def _object_pixels(png_path: str) -> tuple[int, int]:
     return int((deviation > BLANK_MAX_DEVIATION).sum()), int(deviation.max())
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "issue #14: geometry imports (Blender logs 49 vertices, 2 objects) but "
-        "the frame renders empty. Marked strict so that FIXING the renderer "
-        "fails this test and forces the marker off, rather than the eval "
-        "quietly continuing to expect a broken render."
-    ),
-)
+@needs_renderer
 def test_a_rendered_brick_is_visible_in_the_frame():
     with tempfile.TemporaryDirectory() as td:
         ldr = Path(td, "brick.ldr")

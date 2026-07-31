@@ -27,7 +27,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "tomli; python_version < '3.11'"]
+# numpy is here for the blank-frame detector's control test, which must run on
+# runners that have no Blender. Without it that control ImportErrors, and the
+# only thing that keeps it green today is the module-level skip it should not
+# have been under.
+test = ["pytest", "numpy", "tomli; python_version < '3.11'"]
 
 [project.scripts]
 ldraw-mcp = "ldraw_mcp.server:main"

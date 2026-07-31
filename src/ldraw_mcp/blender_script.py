@@ -110,6 +110,14 @@ def main():
     scene.collection.objects.link(sun)
 
     cam_data = bpy.data.cameras.new("Cam")
+    # Clip planes must come from the same scene scale the camera distance does.
+    # ImportLDraw imports at real-world metre scale, so a small model spans
+    # centimetres and sits *inside* Blender's default 0.1 m near plane — it gets
+    # clipped away and every frame renders as the bare world. Deriving both ends
+    # from `distance` keeps any model size framed, rather than special-casing
+    # small ones with a fixed tiny near plane.
+    cam_data.clip_start = distance / 100.0
+    cam_data.clip_end = distance * 100.0
     cam = bpy.data.objects.new("Cam", cam_data)
     scene.collection.objects.link(cam)
     scene.camera = cam

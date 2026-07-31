@@ -14,6 +14,7 @@ GUI anywhere in the loop.
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server-8A2BE2.svg)](https://modelcontextprotocol.io)
 [![CI](https://github.com/musharna/ldraw-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/musharna/ldraw-mcp/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21713452.svg)](https://doi.org/10.5281/zenodo.21713452)
 
 <img src="docs/hero.png" alt="Two rendered views of a red LEGO car — real studs, transparent glass, rubber tires, steering wheel" width="100%">
 

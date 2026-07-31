@@ -2,7 +2,7 @@
   "upload_type": "software",
   "title": "ldraw-mcp: real-geometry LDraw/LEGO rendering for vision-capable models over the Model Context Protocol",
   "description": "A Model Context Protocol (MCP) server that renders LDraw models (.ldr / .mpd / .dat) to images using real part geometry - studs, slopes, transparent glass, rubber tires - via headless Blender and the ImportLDraw addon. It gives vision-capable language models an accurate view of a brick build, so that export faults a geometric proxy render would hide (crossed rotation matrices, floating plates, sunken windows) become visible.",
-  "license": "MIT",
+  "license": "mit",
   "creators": [
     {
       "name": "Arnold, Jaret",

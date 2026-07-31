@@ -14,6 +14,7 @@ authors:
     given-names: Jaret
     orcid: "https://orcid.org/0009-0003-4055-5238"
 repository-code: "https://github.com/musharna/ldraw-mcp"
+doi: 10.5281/zenodo.21713452
 url: "https://pypi.org/project/ldraw-mcp/"
 license: MIT
 version: 0.2.0

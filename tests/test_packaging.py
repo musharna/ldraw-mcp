@@ -41,6 +41,16 @@ def test_version_is_synced_across_all_sources() -> None:
         f"server.json packages[0].version {sj['packages'][0]['version']!r} "
         f"!= pyproject version {pyproject_version!r}"
     )
+    # The fourth copy. This test's whole reason for existing is that a version
+    # source nobody checks drifts, and this one was unchecked through two
+    # releases -- it only happened to be right because it was bumped by hand
+    # alongside the others. `tool` is "manual", so a publishing-tool version
+    # would be meaningless here; it mirrors the package version.
+    meta = sj["_meta"]["io.modelcontextprotocol.registry/publisher-provided"]
+    assert meta["version"] == pyproject_version, (
+        f"server.json _meta publisher-provided version {meta['version']!r} "
+        f"!= pyproject version {pyproject_version!r}"
+    )
 
 
 def test_citation_cff_version_matches_pyproject() -> None:

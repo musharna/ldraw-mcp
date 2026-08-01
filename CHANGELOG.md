@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.2.1
+
+- **Fixed: every render was blank.** 0.2.0 produced a uniform grey frame with no
+  model in it, for every input. The camera _distance_ was derived from the scene
+  bounds but the camera _clip planes_ were left at Blender's defaults.
+  ImportLDraw imports at real-world metre scale — two 2x4 bricks genuinely span
+  0.032 m — so `distance = span * 2.2` placed the camera 0.07 m away, **inside
+  the default `clip_start` of 0.1 m**. Every mesh was clipped away before
+  shading and the frame rendered as the bare white world, which AgX maps to a
+  plausible grey.
+
+  Nothing failed on the way there: the import succeeded (472 vertices per brick,
+  nothing hidden from rendering), Blender exited 0, and the PNG was well-formed.
+  The fault was a parameter that was never set, so no line of code read wrong.
+
+  Both clip planes are now derived from the same `distance` the camera position
+  already uses, which fixes it at any model scale rather than special-casing
+  small models with a fixed tiny near plane. Measured on an otherwise identical
+  scene, max per-pixel deviation from the background goes from **6** (0 of 40000
+  pixels differing) to **195** (13010 of 40000). (#14, #16)
+
+- **The blank-frame eval's control had never run in CI.** It sat under a
+  module-level `skipif(not is_available())`, and CI runners have no Blender — so
+  the one check that proves the detector can tell a blank frame from a drawn one
+  was skipped everywhere it mattered, while its own docstring claimed it ran
+  without a renderer. The skip now applies only to the test that drives Blender.
+  That control also imports `numpy`, which was in neither `dependencies` nor the
+  `test` extra; it stayed green only by being skipped, so `numpy` joins the
+  `test` extra. (#16)
+
+- **`server.json`'s fourth version copy is now guarded.**
+  `_meta.publisher-provided.version` was not covered by the version-sync test
+  that exists precisely because unchecked version sources drift. It was correct
+  through two releases only because it was bumped by hand each time.
+
 ## 0.2.0
 
 - **Migrated to the `mcp` 2.x API** — the "separate work" 0.1.2 deferred below.

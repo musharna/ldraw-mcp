@@ -1,9 +1,37 @@
 # Changelog
 
+## Unreleased
+
+- **A blank render is now an error instead of a success.** Issue #14 reached
+  users because nothing in the render path ever checked that the rendered image
+  contained anything: the import succeeded, Blender exited 0, and a well-formed
+  PNG landed on disk. Fixing the clip planes in 0.2.1 removed one _cause_ of an
+  empty scene without making an empty scene _detectable_ — hidden geometry, a
+  misaimed camera, an import that yields nothing, or dead lights would all have
+  reached a user the same silent way.
+
+  `render_ldraw` now rejects any view whose largest per-channel value range
+  falls at or below `BLANK_FRAME_MAX_SPREAD` (24). The check runs **per view,
+  before stitching**: one blank view beside one good one stitches into an image
+  full of contrast, so a check on the combined result would miss half the
+  failure. Measured separation on real renders is ~34x — a blank frame scores 6
+  (cycles sampling noise only), while the sparsest legitimate render measured,
+  with the model covering just 1% of the frame, scores 207. Extrema rather than
+  a count of differing pixels, so a small part rendered at high resolution does
+  not read as blank.
+
+  Verified by reverting the 0.2.1 clip fix and rendering through real Blender:
+  the guard fires with "2 of 2 view(s) rendered blank". No new dependency —
+  Pillow was already required.
+
+- **Corrected a claim in the 0.2.1 entry below.** It said the bug hit "every
+  input". It did not: the defect was size-dependent, and the correction is
+  recorded in that entry rather than only here.
+
 ## 0.2.1
 
-- **Fixed: every render was blank.** 0.2.0 produced a uniform grey frame with no
-  model in it, for every input. The camera _distance_ was derived from the scene
+- **Fixed: renders of small models were blank.** 0.2.0 produced a uniform grey
+  frame with no model in it. The camera _distance_ was derived from the scene
   bounds but the camera _clip planes_ were left at Blender's defaults.
   ImportLDraw imports at real-world metre scale — two 2x4 bricks genuinely span
   0.032 m — so `distance = span * 2.2` placed the camera 0.07 m away, **inside
@@ -20,6 +48,16 @@
   small models with a fixed tiny near plane. Measured on an otherwise identical
   scene, max per-pixel deviation from the background goes from **6** (0 of 40000
   pixels differing) to **195** (13010 of 40000). (#14, #16)
+
+  **Correction (added after release):** this entry originally said the bug
+  affected "every input". It did not. The failure is size-dependent — a model is
+  clipped only when `span * 2.2` falls below the 0.1 m near plane, i.e. below
+  roughly 4.5 cm, about 11 studs across. Measured on 0.2.0's code: a single 2x4
+  brick (32 mm) renders blank, while the same bricks spread to 56 mm and 192 mm
+  render correctly. Small models — the single part, the demo, the test case —
+  were broken; large builds were always fine. This also bounds who the
+  superseded releases actually affect: **0.1.0 through 0.2.0 all carry the
+  defect** (none of them set the clip planes), for models under that threshold.
 
 - **The blank-frame eval's control had never run in CI.** It sat under a
   module-level `skipif(not is_available())`, and CI runners have no Blender — so

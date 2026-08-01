@@ -25,6 +25,29 @@ from typing import Optional, Sequence
 BLENDER_SCRIPT = Path(__file__).parent / "blender_script.py"
 DEFAULT_AZIMUTHS = (-60.0, 120.0)
 
+# A render that produces a well-formed PNG of nothing is the failure mode that
+# shipped as issue #14: blender exits 0, the file exists, and every layer above
+# reports success. Fixing the clip planes removed one *cause* of an empty scene;
+# it did nothing to make an empty scene *detectable*. Hidden objects, a misaimed
+# camera, an import that yields no geometry, or dead lights all still render a
+# valid blank PNG. This is the output postcondition the render path never had.
+#
+# The predicate is the largest per-channel extrema spread, not a count of
+# differing pixels, because spread does not depend on how much of the frame the
+# model fills -- a single dark pixel swings it. That keeps a small part rendered
+# at high resolution from reading as blank. MEASURED on real renders
+# (200x200, cycles, 16 samples, white world):
+#
+#   blank frame, model inside the near clip plane ...   6   <- sampling noise
+#   model covering ~1% of the frame .................. 207
+#   model covering ~33% of the frame ................. 232
+#   published 0.2.1 render, 1200x600 ................. 245
+#
+# 24 sits ~4x above the observed noise floor and ~8x below the sparsest real
+# render. It is deliberately not the midpoint: a false positive breaks a working
+# render, while a false negative merely restores the pre-guard behaviour.
+BLANK_FRAME_MAX_SPREAD = 24
+
 
 class LDrawRenderError(Exception):
     """Blender render failed or is unavailable."""
@@ -95,9 +118,7 @@ def render_ldraw(
             str(library),
         ]
         try:
-            proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=timeout
-            )
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
             raise LDrawRenderError(f"blender render timed out after {timeout}s")
         views = [Path(f"{prefix}_{i}.png") for i in range(len(azimuths))]
@@ -108,8 +129,34 @@ def render_ldraw(
                 f"blender render failed (exit {proc.returncode}, "
                 f"missing {len(missing)} view(s)):\n{tail}"
             )
+        # Checked per view rather than on the stitched result: one blank view
+        # beside one good one still stitches into an image full of contrast, so
+        # a check after _stitch would miss exactly half the failure.
+        blank = [v for v in views if _frame_spread(v) <= BLANK_FRAME_MAX_SPREAD]
+        if blank:
+            raise LDrawRenderError(
+                f"blender exited 0 but {len(blank)} of {len(views)} view(s) "
+                "rendered blank -- no visible geometry. The model may be "
+                "empty, hidden, or outside the camera frustum."
+            )
         _stitch(views, output_png)
     return output_png
+
+
+def _frame_spread(png_path) -> int:
+    """Largest per-channel value range in a frame. Near zero means nothing drawn."""
+    from PIL import Image
+
+    # From each band's histogram rather than getextrema(), which returns a
+    # (lo, hi) pair for one band but a tuple of pairs for several -- a union
+    # that has to be narrowed at every call site to mean anything.
+    with Image.open(png_path) as im:
+        bands = im.convert("RGB").split()
+    spread = 0
+    for band in bands:
+        used = [value for value, count in enumerate(band.histogram()) if count]
+        spread = max(spread, used[-1] - used[0])
+    return spread
 
 
 def _stitch(view_paths, output_png: str) -> None:

@@ -11,3 +11,8 @@ venv/
 
 # tracked README asset (overrides *.png)
 !docs/hero.png
+
+# tracked test fixtures (overrides *.png). These are real render output, not
+# generated at test time -- see tests/test_blank_frame_guard.py for why they
+# cannot be synthesised.
+!tests/data/*.png

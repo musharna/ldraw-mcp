@@ -23,6 +23,31 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 BLENDER_SCRIPT = Path(__file__).parent / "blender_script.py"
+
+# These two are exactly 180 degrees apart, which LOOKS like a mistake: on a
+# symmetric model the two panels are near-mirror images and read as redundant.
+# They are not. The silhouettes mirror; the visible FACES are opposite ones, and
+# opposing views are what maximises how much of the model you actually see.
+#
+# MEASURED by ray-casting each camera against the mesh and taking the union of
+# faces hit (tools/measure_azimuth_coverage.py), as a fraction of the faces
+# reachable from any azimuth at this elevation:
+#
+#   second view held against -60      symmetric   asymmetric
+#     +90 degrees apart .............   47.5%       35.9%
+#     +120 degrees apart ............   50.7%       38.4%
+#     +180 degrees apart (this) .....   53.2%       42.2%
+#
+# Coverage rises with separation and peaks at 180. Re-spacing these to "reduce
+# redundancy" costs about 6 points of coverage — verify with the tool before
+# changing them.
+#
+# The real gain is a THIRD view, not a different pair: (-60, 60, 180) measures
+# 61.8% / 53.5%. That is a deliberate open choice, not an oversight — it widens
+# the output image and costs ~50% more render time.
+#
+# Ceiling worth knowing: even three views see only ~53-63%, because elevation is
+# fixed at 22 degrees and nothing ever looks down on or up at the model.
 DEFAULT_AZIMUTHS = (-60.0, 120.0)
 
 # A render that produces a well-formed PNG of nothing is the failure mode that

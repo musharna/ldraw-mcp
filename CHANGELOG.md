@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2
 
 - **A blank render is now an error instead of a success.** Issue #14 reached
   users because nothing in the render path ever checked that the rendered image
@@ -24,9 +24,16 @@
   the guard fires with "2 of 2 view(s) rendered blank". No new dependency —
   Pillow was already required.
 
+  **Behaviour change:** `render_ldraw` can now raise `LDrawRenderError` where it
+  previously returned a path to a blank image. A caller that assumed it always
+  got a file back has a new error path to handle. This is a patch release
+  anyway, because a blank image was never a correct result.
+
 - **Corrected a claim in the 0.2.1 entry below.** It said the bug hit "every
   input". It did not: the defect was size-dependent, and the correction is
-  recorded in that entry rather than only here.
+  recorded in that entry rather than only here. The published 0.2.1 **GitHub
+  release notes** carried the same wording and have been corrected too, since a
+  retraction that reaches only one of the places a claim was made is not one.
 
 ## 0.2.1
 

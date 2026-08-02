@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.3
 
 - **Community-health files, bringing this repo to the standard the sibling MCP
   servers now hold.** Adds `CONTRIBUTING.md`, `SECURITY.md`, issue forms (bug

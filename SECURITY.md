@@ -3,7 +3,7 @@
 ## Supported versions
 
 `ldraw-mcp` ships fixes against the latest released version only. The current
-release is **v0.2.2**. Please reproduce any issue on the latest release
+release is **v0.2.3**. Please reproduce any issue on the latest release
 (`uvx ldraw-mcp` always pulls it) before reporting.
 
 | Version        | Supported          |

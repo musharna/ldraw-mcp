@@ -39,6 +39,9 @@ ldraw-mcp-setup = "ldraw_mcp.setup_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/musharna/ldraw-mcp"
+Repository = "https://github.com/musharna/ldraw-mcp"
+Issues = "https://github.com/musharna/ldraw-mcp/issues"
+Changelog = "https://github.com/musharna/ldraw-mcp/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ldraw_mcp"]

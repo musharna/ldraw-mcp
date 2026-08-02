@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a bug in ldraw-mcp
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please do **not** report security vulnerabilities here —
+        see [SECURITY.md](../SECURITY.md) for private disclosure.
+
+        **Rendering problems: run `check_renderer` first and paste its output.** Most
+        render failures are a missing Blender, a missing ImportLDraw addon, or a missing
+        LDraw library, and that tool reports all three by name.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool?
+      multiple: true
+      options:
+        - check_renderer
+        - render_ldraw_file
+        - render_ldraw_text
+        - ldraw-mcp-setup (the CLI, not a tool)
+        - not sure
+    validations:
+      required: true
+  - type: textarea
+    id: checkrenderer
+    attributes:
+      label: check_renderer output
+      description: Paste it verbatim. It names Blender, the addon and the LDraw library.
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `pip show ldraw-mcp` (or the version `uvx` pulled).
+      placeholder: "0.2.2"
+    validations:
+      required: true
+  - type: input
+    id: blender
+    attributes:
+      label: Blender version and how it was found
+      description: "`blender --version`, and whether it came from PATH or LDRAW_MCP_BLENDER."
+      placeholder: "4.2.1 LTS, from PATH"
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: OS and Python version
+      placeholder: "Ubuntu 24.04, Python 3.12"
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact tool call and arguments. For a model that fails to render, attach the .ldr if you can share it.
+      render: shell
+    validations:
+      required: true

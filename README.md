@@ -4,16 +4,17 @@
 
 **Give your MCP client eyes for LEGO® models.**
 
-Render LDraw files (`.ldr` / `.mpd` / `.dat`) to images with *real part
-geometry* — studs, slopes, window glass — using headless Blender and the
+Render LDraw files (`.ldr` / `.mpd` / `.dat`) to images with _real part
+geometry_ — studs, slopes, window glass — using headless Blender and the
 ImportLDraw addon. The output looks like a BrickLink Stud.io render, with no
 GUI anywhere in the loop.
 
 [![PyPI](https://img.shields.io/pypi/v/ldraw-mcp?color=%230a7bbb&label=PyPI)](https://pypi.org/project/ldraw-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/ldraw-mcp)](https://pypi.org/project/ldraw-mcp/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/pypi/l/ldraw-mcp)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server-8A2BE2.svg)](https://modelcontextprotocol.io)
 [![CI](https://github.com/musharna/ldraw-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/musharna/ldraw-mcp/actions/workflows/ci.yml)
+[![Glama](https://glama.ai/mcp/servers/musharna/ldraw-mcp/badges/score.svg)](https://glama.ai/mcp/servers/musharna/ldraw-mcp)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21713452.svg)](https://doi.org/10.5281/zenodo.21713452)
 
 <img src="docs/hero.png" alt="Two rendered views of a red LEGO car — real studs, transparent glass, rubber tires, steering wheel" width="100%">
@@ -43,19 +44,19 @@ ldraw-mcp-setup
 claude mcp add ldraw -- ldraw-mcp
 ```
 
-Then ask things like *"render output/build.ldr and tell me what looks
-wrong"* — the model sees the render, not just the text.
+Then ask things like _"render output/build.ldr and tell me what looks
+wrong"_ — the model sees the render, not just the text.
 
 > **Blender is a prerequisite** (see [Requirements](#requirements)); it is
 > not installed by `ldraw-mcp-setup`.
 
 ## Tools
 
-| tool | what it does |
-|---|---|
+| tool                                                                      | what it does                                                     |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `render_ldraw_file(path, azimuths="-60,120", resolution=640, samples=24)` | Render a model file to a PNG (multi-view, stitched side by side) |
-| `render_ldraw_text(ldr, azimuths="-60,120", resolution=640, samples=24)` | Render inline LDraw content without writing a file first |
-| `check_renderer()` | Diagnose the Blender / addon / parts-library setup |
+| `render_ldraw_text(ldr, azimuths="-60,120", resolution=640, samples=24)`  | Render inline LDraw content without writing a file first         |
+| `check_renderer()`                                                        | Diagnose the Blender / addon / parts-library setup               |
 
 `azimuths` is a comma-separated list of view angles in degrees; each is
 rendered and the views are stitched horizontally. Elevation is fixed at
@@ -73,10 +74,10 @@ rendered and the views are stitched horizontally. Elevation is fixed at
 
 ### Environment variables
 
-| var | meaning |
-|---|---|
-| `LDRAW_MCP_BLENDER` | Path to the blender binary (overrides `PATH` lookup) |
-| `LDRAW_MCP_DISABLE` | Set to `1` to force `is_available()` to `False` |
+| var                  | meaning                                                |
+| -------------------- | ------------------------------------------------------ |
+| `LDRAW_MCP_BLENDER`  | Path to the blender binary (overrides `PATH` lookup)   |
+| `LDRAW_MCP_DISABLE`  | Set to `1` to force `is_available()` to `False`        |
 | `LDRAW_LIBRARY_PATH` | Path to the LDraw parts library (community convention) |
 
 ### Manual setup
@@ -88,7 +89,7 @@ If `ldraw-mcp-setup` can't detect things automatically:
   and unzip so that `~/.ldraw/parts/` exists.
 - **ImportLDraw addon:** download the latest release from
   [TobyLobster/ImportLDraw](https://github.com/TobyLobster/ImportLDraw/releases)
-  and install it via *Blender > Preferences > Add-ons > Install*, or unzip
+  and install it via _Blender > Preferences > Add-ons > Install_, or unzip
   into `~/.config/blender/<version>/scripts/addons/io_scene_importldraw/`.
   (Launch Blender once first so the config directory exists.)
 

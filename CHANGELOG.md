@@ -1,5 +1,43 @@
 # Changelog
 
+## Unreleased
+
+- **Community-health files, bringing this repo to the standard the sibling MCP
+  servers now hold.** Adds `CONTRIBUTING.md`, `SECURITY.md`, issue forms (bug
+  report + feature request, plus a config routing security reports to private
+  advisories), a pull-request template, `.editorconfig` and a CodeQL workflow.
+  `.mcp.json`, `glama.json` and `dependabot.yml` were already here — this repo
+  led on those and lagged on the rest.
+
+  **The Dependabot config stays on the `pip` ecosystem.** The three sibling
+  servers were moved to `uv` in the same sweep, but that is correct _there_ and
+  would be wrong here: this is a pip/hatchling project with no lockfile, and CI
+  installs with `pip install -e ".[test]"`.
+
+  `SECURITY.md` describes the trust boundary that is specific to this server —
+  it launches **Blender as a subprocess** and feeds it caller-designated model
+  files. Read out of the source rather than assumed: the command is an argv list
+  run without a shell, the Blender script is bundled rather than caller-supplied,
+  `--factory-startup` keeps the operator's own add-ons out, and which Blender
+  binary runs is an operator decision (`LDRAW_MCP_BLENDER` or `PATH`), not a
+  caller one. The realistic exposure is that a hostile `.ldr` is parsed by
+  Blender and ImportLDraw, which is stated plainly along with what is in and out
+  of scope for a report.
+
+  `CONTRIBUTING.md` records the two rules this repo learned the hard way: a
+  module-level skip can hide a control that never runs in CI (which is what
+  happened to the blank-frame detector's control), and a render needs an output
+  postcondition because a subprocess exiting 0 is not evidence that a frame was
+  produced.
+
+- **`project.urls` gained `Repository`, `Issues` and `Changelog`** — it exposed
+  only `Homepage`, so PyPI offered no link to the issue tracker.
+
+- **The licence badge is derived rather than asserted.** It read
+  `badge/License-MIT-green`, a literal that would keep claiming MIT if the
+  licence ever changed; it now reads `pypi/l/ldraw-mcp`. A Glama badge was added
+  alongside it, matching the sibling repos.
+
 ## 0.2.2
 
 - **A blank render is now an error instead of a success.** Issue #14 reached

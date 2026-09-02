@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- **Every refusal reaches the caller again.** mcp 2.1 treats an exception out
+  of a tool that is not a `ToolError` as a crash: it answers `Error executing
+  tool <name>` and leaves the message in the server log. This package pins
+  `mcp>=2,<3` and has no lockfile, so a fresh install has been resolving 2.1
+  and masking all of it — the path that did not exist, the azimuth that would
+  not parse, and "run `ldraw-mcp-setup`", which is the only thing that makes an
+  unconfigured server recoverable. `_surfaces_refusals` converts at the
+  boundary; `render` keeps raising `LDrawRenderError`, since `ldraw-mcp-setup`
+  imports it and it is usable without MCP. A `TypeError` is still masked.
+
+  Nothing failed while this was broken, which is the more useful half of the
+  entry. `test_server.py` drives a real client, but only along the happy path,
+  and a masked refusal is still an error — so `is_error` reads the same either
+  way. The new `test_refusals_reach_the_caller.py` calls three failing tools
+  through the client and asserts on the TEXT that comes back, which is the only
+  assertion the masking can change, plus a scan that fails if a tool is ever
+  added without the wrapper.
+
 ## 0.2.3
 
 - **Community-health files, bringing this repo to the standard the sibling MCP

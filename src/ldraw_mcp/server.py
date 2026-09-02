@@ -21,19 +21,57 @@ Requirements (see README.md):
 """
 
 import tempfile
+from functools import wraps
 from pathlib import Path
 
 # mcp 2.x renamed FastMCP to MCPServer and removed mcp.server.fastmcp entirely.
 # Same class, same decorator, same kwargs — a rename, not a rewrite. Image moved
 # with it.
 from mcp.server.mcpserver import Image, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 
 from . import render as ldraw_render
 
 mcp = MCPServer("ldraw")
 
+#: The exceptions a caller can do something about. Every one of them carries an
+#: instruction rather than a diagnosis - install Blender, run the setup, fix the
+#: path, fix the azimuth - which is why they have to arrive intact.
+#: `LDrawRenderError` is the render stack refusing; `FileNotFoundError` is a
+#: path that is not there; `ValueError` is `float()` on an azimuth that is not
+#: a number. A bug is a TypeError, an AttributeError, a KeyError - none of them
+#: here, so they stay masked, which is what masking is for.
+_REFUSALS = (ldraw_render.LDrawRenderError, FileNotFoundError, ValueError)
+
+
+def _surfaces_refusals(tool):
+    """Re-raise an anticipated refusal as ToolError so its text reaches the model.
+
+    mcp 2.1 treats any exception out of a tool that is not a ToolError as a
+    crash: it answers `Error executing tool <name>` and leaves the message in
+    the server log, where the model that called the tool cannot read it. Under
+    2.0 the text went through whatever the type was, which is why these tools
+    could raise ordinary exceptions and nothing here had to say so. The pin is
+    `mcp>=2,<3` with no lockfile, so a fresh install has been resolving 2.1
+    and masking all of it.
+
+    `render` keeps raising `LDrawRenderError` - it is usable without MCP, and
+    `ldraw-mcp-setup` imports it - so the conversion happens here, once, at the
+    boundary where MCP starts.
+    """
+
+    @wraps(tool)
+    def surfaced(*args, **kwargs):
+        try:
+            return tool(*args, **kwargs)
+        except _REFUSALS as exc:
+            raise ToolError(str(exc)) from exc
+
+    return surfaced
+
 
 @mcp.tool()
+@_surfaces_refusals
 def check_renderer() -> str:
     """Report whether the LDraw rendering stack is available and why not."""
     blender = ldraw_render.find_blender()
@@ -57,6 +95,7 @@ def _render(ldr_path: str, azimuths: str, resolution: int, samples: int) -> Imag
 
 
 @mcp.tool()
+@_surfaces_refusals
 def render_ldraw_file(
     path: str,
     azimuths: str = "-60,120",
@@ -75,6 +114,7 @@ def render_ldraw_file(
 
 
 @mcp.tool()
+@_surfaces_refusals
 def render_ldraw_text(
     ldr: str,
     azimuths: str = "-60,120",

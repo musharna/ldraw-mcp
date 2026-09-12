@@ -48,3 +48,6 @@ packages = ["src/ldraw_mcp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mutmut]
+source_paths = ["src"]

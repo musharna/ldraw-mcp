@@ -26,9 +26,7 @@ LDRAW_LIBRARY_URL = "https://library.ldraw.org/library/updates/complete.zip"
 IMPORTLDRAW_LATEST_API = (
     "https://api.github.com/repos/TobyLobster/ImportLDraw/releases/latest"
 )
-IMPORTLDRAW_RELEASES_PAGE = (
-    "https://github.com/TobyLobster/ImportLDraw/releases/latest"
-)
+IMPORTLDRAW_RELEASES_PAGE = "https://github.com/TobyLobster/ImportLDraw/releases/latest"
 
 
 def _log(msg: str) -> None:
@@ -101,11 +99,17 @@ def _find_addon_asset_url() -> str | None:
     with urllib.request.urlopen(req, timeout=60) as resp:  # nosec B310 - fixed https URL
         release = json.load(resp)
     for asset in release.get("assets", []):
-        name = asset.get("name", "")
-        if name.endswith(".zip"):
-            return asset.get("browser_download_url")
-    # fall back to the auto-generated source zip
-    return release.get("zipball_url")
+        if asset.get("name", "").endswith(".zip"):
+            url = asset.get("browser_download_url")
+            break
+    else:
+        # fall back to the auto-generated source zip
+        url = release.get("zipball_url")
+    # the URL is data from the API response: enforce https rather than trust provenance
+    if url and not url.startswith("https://"):
+        _log(f"[addon] refusing non-https asset URL from the release API: {url!r}")
+        return None
+    return url
 
 
 def _addon_root_in_zip(zf: zipfile.ZipFile) -> str | None:
@@ -167,7 +171,7 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
     _log(f"[addon] downloading {asset_url} ...")
     try:
         req = urllib.request.Request(asset_url, headers={"User-Agent": "ldraw-mcp"})
-        with urllib.request.urlopen(req, timeout=120) as resp:  # nosec B310 - GitHub release asset URL
+        with urllib.request.urlopen(req, timeout=120) as resp:  # nosec B310 - https enforced in _find_addon_asset_url
             data = resp.read()
     except Exception as exc:  # noqa: BLE001
         _log(f"[addon] download FAILED: {exc}")
@@ -187,7 +191,7 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
             addon_dir.mkdir(parents=True, exist_ok=True)
             _log(f"[addon] installing into {dest}")
             for member in members:
-                rel = member[len(prefix):]
+                rel = member[len(prefix) :]
                 if not rel:
                     continue
                 target = dest / rel
@@ -198,7 +202,9 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
                 _log(f"[addon] WARNING: {dest}/__init__.py missing after install")
                 ok = False
     if ok:
-        _log("[addon] installed. Enable it in Blender > Preferences > Add-ons if needed.")
+        _log(
+            "[addon] installed. Enable it in Blender > Preferences > Add-ons if needed."
+        )
     return ok
 
 
@@ -212,9 +218,15 @@ def main() -> None:
         default=os.environ.get("LDRAW_LIBRARY_PATH") or str(Path.home() / ".ldraw"),
         help="Where to install the LDraw parts library (default: ~/.ldraw)",
     )
-    parser.add_argument("--skip-library", action="store_true", help="Don't install the LDraw library")
-    parser.add_argument("--skip-addon", action="store_true", help="Don't install the ImportLDraw addon")
-    parser.add_argument("--force", action="store_true", help="Reinstall even if present")
+    parser.add_argument(
+        "--skip-library", action="store_true", help="Don't install the LDraw library"
+    )
+    parser.add_argument(
+        "--skip-addon", action="store_true", help="Don't install the ImportLDraw addon"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Reinstall even if present"
+    )
     args = parser.parse_args()
 
     ldraw_dir = Path(args.ldraw_dir).expanduser()
@@ -224,12 +236,17 @@ def main() -> None:
         ok = install_ldraw_library(ldraw_dir, force=args.force) and ok
 
     if not args.skip_addon:
-        ok = install_importldraw_addon(detect_blender_addon_dirs(), force=args.force) and ok
+        ok = (
+            install_importldraw_addon(detect_blender_addon_dirs(), force=args.force)
+            and ok
+        )
 
     _log("")
     if ok:
         _log("Setup complete. Verify with:  ldraw-mcp   (then call check_renderer)")
-        _log("Or:  python -c \"from ldraw_mcp.render import is_available; print(is_available())\"")
+        _log(
+            'Or:  python -c "from ldraw_mcp.render import is_available; print(is_available())"'
+        )
     else:
         _log("Setup finished with warnings — see messages above for manual steps.")
         sys.exit(1)

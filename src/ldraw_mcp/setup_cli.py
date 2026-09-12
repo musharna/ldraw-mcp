@@ -48,7 +48,7 @@ def install_ldraw_library(ldraw_dir: Path, force: bool = False) -> bool:
     ldraw_dir.mkdir(parents=True, exist_ok=True)
     _log(f"[ldraw] downloading {LDRAW_LIBRARY_URL} ...")
     try:
-        with urllib.request.urlopen(LDRAW_LIBRARY_URL) as resp:
+        with urllib.request.urlopen(LDRAW_LIBRARY_URL, timeout=120) as resp:  # nosec B310 - fixed https URL
             data = resp.read()
     except Exception as exc:  # noqa: BLE001
         _log(f"[ldraw] download FAILED: {exc}")
@@ -98,7 +98,7 @@ def _find_addon_asset_url() -> str | None:
     req = urllib.request.Request(
         IMPORTLDRAW_LATEST_API, headers={"Accept": "application/vnd.github+json"}
     )
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=60) as resp:  # nosec B310 - fixed https URL
         release = json.load(resp)
     for asset in release.get("assets", []):
         name = asset.get("name", "")
@@ -167,7 +167,7 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
     _log(f"[addon] downloading {asset_url} ...")
     try:
         req = urllib.request.Request(asset_url, headers={"User-Agent": "ldraw-mcp"})
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:  # nosec B310 - GitHub release asset URL
             data = resp.read()
     except Exception as exc:  # noqa: BLE001
         _log(f"[addon] download FAILED: {exc}")

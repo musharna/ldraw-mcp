@@ -119,7 +119,9 @@ jobs:
                regex backtracking, resource leaks, concurrency.
             5. Security: injection, path traversal, secrets, unsafe deserialisation.
             Ignore style. If nothing meets the bar, say so in one line.
+            If a sticky review comment from you already exists on this PR, review
+            only the commits since it and post a short delta, not a full re-review.
             Post the review as a PR comment via gh.
           claude_args: |
             --allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
-            --max-turns 40
+            --max-turns 80

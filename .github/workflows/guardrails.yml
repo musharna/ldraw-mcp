@@ -70,7 +70,7 @@ jobs:
         run: |
           uv sync --all-extras --dev
           if [ -f requirements-dev.txt ]; then uv pip install -r requirements-dev.txt; fi
-          uv run --with pip-audit pip-audit --strict --desc on
+          uv run --with pip-audit pip-audit --strict --skip-editable --desc on  # the project itself may not be on PyPI
       - name: bandit (insecure code patterns, medium+ severity)
         run: uvx bandit -q -r . -ll -x ./tests,./.venv,./mutants
 

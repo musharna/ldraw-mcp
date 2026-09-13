@@ -15,6 +15,18 @@ import types
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _forget_blender_script():
+    # The import below is made against fake bpy/addon_utils. monkeypatch cannot undo it
+    # (delitem on an absent key records nothing), so drop the module and the package
+    # attribute explicitly rather than leave a fake-built module cached for later tests.
+    yield
+    sys.modules.pop("ldraw_mcp.blender_script", None)
+    pkg = sys.modules.get("ldraw_mcp")
+    if pkg is not None and hasattr(pkg, "blender_script"):
+        delattr(pkg, "blender_script")
+
+
 def _load(monkeypatch, installed):
     calls = []
 

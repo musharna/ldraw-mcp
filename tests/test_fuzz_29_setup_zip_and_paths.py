@@ -45,7 +45,11 @@ def test_library_zip_slip_is_refused_and_nothing_escapes(monkeypatch, tmp_path):
     assert setup_cli.install_ldraw_library(tmp_path / "ok") is True
     assert (tmp_path / "ok" / "parts" / "3001.dat").read_text() == "0 brick"
 
-    for name in ("ldraw/../../outside/marker.txt", "../outside/marker.txt"):
+    # "ldraw/../outside/marker.txt" is joined onto dest with the prefix stripped, so
+    # one ".." lands exactly on `marker`: main wrote it there. The bare
+    # "../outside/marker.txt" went through zipfile.extract on main, which strips
+    # "..", so it never escaped; it is kept as a refusal case, not an escape proof.
+    for name in ("ldraw/../outside/marker.txt", "../outside/marker.txt"):
         evil = _zip({"ldraw/parts/3001.dat": "0 brick", name: "pwned"})
         _serve(monkeypatch, lambda url, evil=evil: evil)
         dest = tmp_path / "lib"
@@ -65,7 +69,7 @@ def test_library_non_zip_download_is_a_logged_failure(monkeypatch, tmp_path):
 
 def _addon_server(archive):
     def payload(url):
-        if "api.github.com" in url:
+        if url == setup_cli.IMPORTLDRAW_LATEST_API:
             asset = {"name": "a.zip", "browser_download_url": "https://x/a.zip"}
             return json.dumps({"assets": [asset]}).encode()
         return archive
@@ -87,7 +91,8 @@ def test_addon_zip_slip_is_refused_and_nothing_escapes(monkeypatch, tmp_path):
     evil = _zip(
         {
             "addon-1.0/__init__.py": "x = 1",
-            "addon-1.0/../../../outside/marker.txt": "pwned",
+            # joined onto addons/io_scene_importldraw after "addon-1.0/" is stripped
+            "addon-1.0/../../outside/marker.txt": "pwned",
         }
     )
     _serve(monkeypatch, _addon_server(evil))

@@ -19,8 +19,8 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 
 BLENDER_SCRIPT = Path(__file__).parent / "blender_script.py"
 
@@ -78,7 +78,7 @@ class LDrawRenderError(Exception):
     """Blender render failed or is unavailable."""
 
 
-def find_blender() -> Optional[str]:
+def find_blender() -> str | None:
     env = os.environ.get("LDRAW_MCP_BLENDER")
     if env and Path(env).exists():
         return env
@@ -89,7 +89,7 @@ def find_blender() -> Optional[str]:
     return str(local) if local.exists() else None
 
 
-def ldraw_library_dir() -> Optional[Path]:
+def ldraw_library_dir() -> Path | None:
     env = os.environ.get("LDRAW_LIBRARY_PATH")
     candidates = [Path(env)] if env else []
     candidates += [Path.home() / ".ldraw", Path("/usr/share/ldraw")]
@@ -143,7 +143,9 @@ def render_ldraw(
             str(library),
         ]
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout, check=False
+            )
         except subprocess.TimeoutExpired:
             raise LDrawRenderError(f"blender render timed out after {timeout}s")
         views = [Path(f"{prefix}_{i}.png") for i in range(len(azimuths))]

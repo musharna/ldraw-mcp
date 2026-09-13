@@ -37,12 +37,11 @@ def parse_args():
 def enable_addon():
     import addon_utils
 
+    # enable() signals a missing add-on by returning None (it prints the cause and
+    # does not raise), so success is the return value, not the absence of an error.
     for name in ("io_scene_importldraw", "importldraw"):
-        try:
-            addon_utils.enable(name, default_set=True)
+        if addon_utils.enable(name, default_set=True) is not None:
             return
-        except Exception:
-            continue
     raise RuntimeError("ImportLDraw addon not found in Blender addons")
 
 

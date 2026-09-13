@@ -52,9 +52,9 @@ signal.signal(
 )
 signal.alarm(1800)
 
-import addon_utils  # noqa: E402
-import bpy  # noqa: E402
-import mathutils  # noqa: E402
+import addon_utils
+import bpy
+import mathutils
 
 MODEL = os.environ["MODEL"]
 RAYS = int(os.environ.get("RAYS", "140"))
@@ -66,12 +66,11 @@ AZIMUTHS = list(range(-180, 180, STEP))
 
 
 def enable_importer():
+    # enable() returns None for a missing add-on instead of raising (see
+    # src/ldraw_mcp/blender_script.py:enable_addon).
     for name in ("io_scene_importldraw", "importldraw"):
-        try:
-            addon_utils.enable(name, default_set=True)
+        if addon_utils.enable(name, default_set=True) is not None:
             return name
-        except Exception:
-            continue
     raise RuntimeError("ImportLDraw addon not available")
 
 
@@ -157,7 +156,7 @@ reachable = set().union(*per_view.values())
 def coverage(views):
     seen = set()
     for a in views:
-        snapped = int(round(a / STEP)) * STEP
+        snapped = round(a / STEP) * STEP
         seen |= per_view[((snapped + 180) % 360) - 180]
     return len(seen) / len(reachable)
 

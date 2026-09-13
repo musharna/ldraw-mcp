@@ -33,6 +33,20 @@ def _log(msg: str) -> None:
     print(msg, flush=True)
 
 
+def _contained(root: Path, rel: str) -> Path:
+    """Where a zip member named `rel` lands under `root`; ValueError if outside it.
+
+    Member names come from a downloaded archive, so they are untrusted input: a
+    `..` component or an absolute name would otherwise write anywhere the
+    process can (zip-slip). Every member is checked before anything is written.
+    """
+    base = root.resolve()
+    target = (base / rel).resolve()
+    if not target.is_relative_to(base):
+        raise ValueError(f"zip member {rel!r} would extract outside {root}")
+    return target
+
+
 def ldraw_library_present(ldraw_dir: Path) -> bool:
     return (ldraw_dir / "parts").is_dir()
 
@@ -60,19 +74,33 @@ def install_ldraw_library(ldraw_dir: Path, force: bool = False) -> bool:
     _log(f"[ldraw] unzipping ({len(data) // (1024 * 1024)} MB) ...")
     # complete.zip contains a top-level 'ldraw/' directory; extract its
     # contents directly into ldraw_dir.
-    with zipfile.ZipFile(io.BytesIO(data)) as zf:
-        for member in zf.namelist():
-            parts = member.split("/", 1)
-            if parts[0] == "ldraw" and len(parts) == 2 and parts[1]:
-                target = ldraw_dir / parts[1]
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            plan = []
+            for member in zf.namelist():
+                parts = member.split("/", 1)
+                if parts[0] == "ldraw" and len(parts) == 2:
+                    if not parts[1]:
+                        continue  # the ldraw/ directory entry itself
+                    rel = parts[1]
+                else:
+                    rel = member
+                plan.append((member, _contained(ldraw_dir, rel)))
+            for member, target in plan:
                 if member.endswith("/"):
                     target.mkdir(parents=True, exist_ok=True)
                 else:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     with zf.open(member) as src, open(target, "wb") as dst:
                         dst.write(src.read())
-            else:
-                zf.extract(member, ldraw_dir)
+    except (zipfile.BadZipFile, ValueError) as exc:
+        _log(f"[ldraw] refusing the downloaded archive: {exc}")
+        _log(
+            "[ldraw] manual step: download complete.zip from\n"
+            f"          {LDRAW_LIBRARY_URL}\n"
+            f"        and unzip it so that {ldraw_dir}/parts/ exists."
+        )
+        return False
 
     if ldraw_library_present(ldraw_dir):
         _log(f"[ldraw] installed at {ldraw_dir}")
@@ -178,29 +206,36 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
         return False
 
     ok = True
-    with zipfile.ZipFile(io.BytesIO(data)) as zf:
-        prefix = _addon_root_in_zip(zf)
-        if prefix is None:
-            _log("[addon] could not locate the addon package inside the zip")
-            return False
-        members = [
-            n for n in zf.namelist() if n.startswith(prefix) and not n.endswith("/")
-        ]
-        for addon_dir in addon_dirs:
-            dest = addon_dir / target_name
-            addon_dir.mkdir(parents=True, exist_ok=True)
-            _log(f"[addon] installing into {dest}")
-            for member in members:
-                rel = member[len(prefix) :]
-                if not rel:
-                    continue
-                target = dest / rel
-                target.parent.mkdir(parents=True, exist_ok=True)
-                with zf.open(member) as src, open(target, "wb") as out:
-                    out.write(src.read())
-            if not (dest / "__init__.py").exists():
-                _log(f"[addon] WARNING: {dest}/__init__.py missing after install")
-                ok = False
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            prefix = _addon_root_in_zip(zf)
+            if prefix is None:
+                _log("[addon] could not locate the addon package inside the zip")
+                return False
+            rels = [
+                (n, n[len(prefix) :])
+                for n in zf.namelist()
+                if n.startswith(prefix) and not n.endswith("/") and n[len(prefix) :]
+            ]
+            for addon_dir in addon_dirs:
+                dest = addon_dir / target_name
+                plan = [(member, _contained(dest, rel)) for member, rel in rels]
+                addon_dir.mkdir(parents=True, exist_ok=True)
+                _log(f"[addon] installing into {dest}")
+                for member, target in plan:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with zf.open(member) as src, open(target, "wb") as out:
+                        out.write(src.read())
+                if not (dest / "__init__.py").exists():
+                    _log(f"[addon] WARNING: {dest}/__init__.py missing after install")
+                    ok = False
+    except (zipfile.BadZipFile, ValueError) as exc:
+        _log(f"[addon] refusing the downloaded archive: {exc}")
+        _log(
+            f"[addon] manual step: download the addon zip from {IMPORTLDRAW_RELEASES_PAGE}\n"
+            "          and install via Blender > Preferences > Add-ons > Install."
+        )
+        return False
     if ok:
         _log(
             "[addon] installed. Enable it in Blender > Preferences > Add-ons if needed."

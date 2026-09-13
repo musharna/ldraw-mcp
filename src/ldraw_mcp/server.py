@@ -107,8 +107,17 @@ def render_ldraw_file(
     Views are rendered at each comma-separated azimuth (degrees) and
     stitched side by side. Higher samples = cleaner but slower.
     """
-    p = Path(path).expanduser()
-    if not p.exists():
+    # expanduser raises RuntimeError for an unknown ~user, and exists() raises
+    # OSError for a name the filesystem rejects (e.g. ENAMETOOLONG). Both are the
+    # caller's path being unusable, so they refuse like a missing file does.
+    try:
+        p = Path(path).expanduser()
+        exists = p.exists()
+    except (RuntimeError, OSError) as exc:
+        raise ValueError(
+            f"unusable LDraw path {path[:200]!r}: {getattr(exc, 'strerror', None) or exc}"
+        ) from exc
+    if not exists:
         raise FileNotFoundError(f"no such LDraw file: {p}")
     return _render(str(p), azimuths, resolution, samples)
 

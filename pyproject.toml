@@ -51,3 +51,4 @@ testpaths = ["tests"]
 
 [tool.mutmut]
 source_paths = ["src"]
+also_copy = [".github", "CITATION.cff", "conftest.py", "server.json", "tools"]

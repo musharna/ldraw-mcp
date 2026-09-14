@@ -70,7 +70,7 @@ jobs:
         # Counting from the short list read "0 killed" on 2,000 checked mutants.
         run: |
           uv run mutmut results > survivors.txt || true
-          uv run mutmut results --all > all-mutants.txt || true
+          uv run mutmut results --all true > all-mutants.txt || true
           n=$(grep -c ": survived" survivors.txt || true)
           killed=$(grep -c ": killed" all-mutants.txt || true)
           checked=$(grep -vcE ": not checked$|^$" all-mutants.txt || true)

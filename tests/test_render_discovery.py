@@ -130,11 +130,18 @@ def test_library_dir_falls_back_to_the_system_share_path(home, tmp_path, monkeyp
     tmp so the test can observe it without a real /usr/share/ldraw."""
     system_lib = _library(tmp_path / "usr-share-ldraw")
 
-    class _Redirected(type(Path())):
-        def __init__(self, *args):
+    real_path = render.Path
+
+    class _Redirected:
+        """Stand-in for the module's Path: same class for everything except
+        the one distro literal (a plain callable, so it works on 3.10+)."""
+
+        home = staticmethod(real_path.home)
+
+        def __new__(cls, *args):
             if args == ("/usr/share/ldraw",):
-                args = (str(system_lib),)
-            super().__init__(*args)
+                return real_path(system_lib)
+            return real_path(*args)
 
     monkeypatch.setattr(render, "Path", _Redirected)
     assert render.ldraw_library_dir() == system_lib

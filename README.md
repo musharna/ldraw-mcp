@@ -57,10 +57,23 @@ wrong"_ — the model sees the render, not just the text.
 | `render_ldraw_file(path, azimuths="-60,120", resolution=640, samples=24)` | Render a model file to a PNG (multi-view, stitched side by side) |
 | `render_ldraw_text(ldr, azimuths="-60,120", resolution=640, samples=24)`  | Render inline LDraw content without writing a file first         |
 | `check_renderer()`                                                        | Diagnose the Blender / addon / parts-library setup               |
+| `bill_of_materials(path="", ldr="")`                                      | Part × colour × quantity rows for a model file or inline text    |
+| `lookup_color(query)`                                                     | Colour code ↔ name / RGB / edge / alpha from `LDConfig.ldr`      |
+| `search_parts(query, limit=50)`                                           | Library parts whose description or file name contains `query`    |
 
 `azimuths` is a comma-separated list of view angles in degrees; each is
 rendered and the views are stitched horizontally. Elevation is fixed at
 22°. Higher `samples` = cleaner but slower.
+
+The three query tools are read-only and need no Blender. `bill_of_materials`
+expands MPD sub-models (and sibling `.ldr`/`.mpd` files next to the model) with
+their multiplicity, and resolves colour 16 to the colour of the referencing
+line; colour 24 (edge) is reported as 24. It counts without a parts library —
+descriptions and colour names are then `null`. A colour code `LDConfig.ldr`
+does not define is listed under `unknown_color_codes`, a part the library lacks
+under `parts_not_in_library`; neither is dropped. A sub-model reference cycle is
+an error that names the cycle. `lookup_color` and `search_parts` need the
+library (`ldraw-mcp-setup`).
 
 ## Requirements
 

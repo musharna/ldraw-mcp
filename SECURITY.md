@@ -3,12 +3,12 @@
 ## Supported versions
 
 `ldraw-mcp` ships fixes against the latest released version only. The current
-release is **v0.2.3**. Please reproduce any issue on the latest release
+release is **v0.3.0**. Please reproduce any issue on the latest release
 (`uvx ldraw-mcp` always pulls it) before reporting.
 
 | Version        | Supported          |
 | -------------- | ------------------ |
-| latest (0.2.x) | :white_check_mark: |
+| latest (0.3.x) | :white_check_mark: |
 | < latest       | :x:                |
 
 ## Reporting a vulnerability
@@ -58,6 +58,15 @@ halves of that are worth understanding before you deploy it.
   rather than against this server's Python.
 - `render_ldraw_text` writes caller-supplied text to a temporary directory and
   renders that, so the same parser exposure applies without the arbitrary-read one.
+
+- `bill_of_materials` reads the **path from the caller** the same way, in Python
+  rather than in Blender, and returns counts and file names - not file content;
+  a line it cannot parse is reported by number, not echoed. It also follows a
+  model's references to **sibling `.ldr`/`.mpd` files**, which are paths the
+  model named rather than the caller: those are confined to the model's own
+  directory tree (`..`, absolute paths and symlinks leading out are refused),
+  and a model over 32 MiB or nested deeper than 64 sub-models is refused.
+  `lookup_color` and `search_parts` read only the operator's LDraw library.
 
 Practical guidance: run it as a user whose read access you are comfortable
 exposing to the model driving it, do not run it as root, and treat `.ldr` files

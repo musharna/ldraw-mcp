@@ -1,6 +1,29 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+- **Three read-only query tools: `bill_of_materials`, `lookup_color`,
+  `search_parts`.** The server could show a model but not say what was in it.
+  `bill_of_materials(path | ldr)` returns part × colour × quantity rows: MPD
+  sub-models (and sibling `.ldr`/`.mpd` files, confined to the model's own
+  directory) are expanded with their multiplicity, colour 16 inherits the
+  colour of the referencing line, file names compare case-insensitively with
+  either separator. Quantities are summed per sub-model and multiplied up
+  rather than expanded per instance, so a model that doubles at each of 30
+  levels is 60 additions. A reference cycle raises `LDrawReferenceCycleError`
+  naming the cycle; nesting past 64 and models past 32 MiB are refused.
+  Descriptions come from part-file headers and colour names from
+  `LDConfig.ldr` when the library is installed; without it the counts are
+  identical and those fields are `null`. An undefined colour code or a part
+  the library lacks is listed, never dropped. `lookup_color` maps code ↔ name
+  / RGB; `search_parts` searches `parts/` headers by substring. No edit tools.
+
+  `tests/data/ldraw/` is a verbatim slice of the real library (`LDConfig.ldr`
+  and three part files, CC BY 4.0), because CI has no library and a
+  hand-written LDConfig would only have tested what its author believed. It
+  paid for itself in the first run: the test expected Red to be `#C91A09`,
+  which is Trans_Red; the real file says `#B40000`.
+
 
 - **Every refusal reaches the caller again.** mcp 2.1 treats an exception out
   of a tool that is not a `ToolError` as a crash: it answers `Error executing

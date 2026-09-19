@@ -1,0 +1,6 @@
+LDConfig.ldr and parts/3001.dat, parts/3002.dat, parts/3004.dat are copied
+verbatim from the LDraw.org official parts library (complete.zip,
+https://library.ldraw.org/library/updates/complete.zip; LDConfig UPDATE
+2026-05-29). Authors are named in each file's header. Licensed under
+CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); see CAreadme.txt
+in the library. Unmodified.

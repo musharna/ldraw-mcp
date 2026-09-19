@@ -22,6 +22,7 @@ leaf - part files are never descended into.
 
 from __future__ import annotations
 
+import os
 from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
@@ -218,8 +219,6 @@ class _Model:
         """(section key, scope for that section's own references), or None = part."""
         if scope + name in self.sections:
             return scope + name, scope
-        if not scope and name in self.sections:
-            return name, ""
         key = self._sibling(name)
         if key is None:
             return None
@@ -440,13 +439,31 @@ def lookup_colour(query: str, library: Path | None) -> dict:
     }
 
 
-@lru_cache(maxsize=2)
-def _part_index(parts_dir: str, mtime_ns: int) -> tuple[tuple[str, str], ...]:
+# {part file path: (mtime_ns, size, description)}. Keyed per FILE, not on the
+# directory's mtime: a part rewritten in place under the same name (what
+# `ldraw-mcp-setup --force` does) leaves the directory's mtime untouched, and
+# this process outlives such an update. Every search stats every part (one
+# scandir, ~24k entries) and re-reads only the headers that changed.
+_HEADER_CACHE: dict[str, tuple[int, int, str]] = {}
+
+
+def _part_index(parts_dir: Path) -> list[tuple[str, str]]:
     entries = []
-    for part_file in sorted(Path(parts_dir).iterdir()):
-        if part_file.suffix.lower() == ".dat" and part_file.is_file():
-            entries.append((part_file.name.lower(), _header_description(part_file)))
-    return tuple(entries)
+    with os.scandir(parts_dir) as listing:
+        for entry in listing:
+            if not entry.name.lower().endswith(".dat") or not entry.is_file():
+                continue
+            stat = entry.stat()
+            cached = _HEADER_CACHE.get(entry.path)
+            if cached is None or cached[:2] != (stat.st_mtime_ns, stat.st_size):
+                cached = (
+                    stat.st_mtime_ns,
+                    stat.st_size,
+                    _header_description(Path(entry.path)),
+                )
+                _HEADER_CACHE[entry.path] = cached
+            entries.append((entry.name.lower(), cached[2]))
+    return sorted(entries)
 
 
 def search_parts(query: str, library: Path | None, limit: int = 50) -> dict:
@@ -459,7 +476,7 @@ def search_parts(query: str, library: Path | None, limit: int = 50) -> dict:
             f"limit must be between 1 and {MAX_SEARCH_RESULTS}, got {limit}"
         )
     parts_dir = _require_library(library) / "parts"
-    index = _part_index(str(parts_dir), parts_dir.stat().st_mtime_ns)
+    index = _part_index(parts_dir)
     hits = [
         {"part": name, "description": desc}
         for name, desc in index

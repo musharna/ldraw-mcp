@@ -385,6 +385,33 @@ def test_search_parts_matches_descriptions_with_collapsed_spaces_and_truncates()
         bom.search_parts("brick", FIXTURE_LIBRARY, limit=201)
 
 
+def test_a_part_rewritten_in_place_is_searched_by_its_new_description(tmp_path):
+    """The server is long-lived and `ldraw-mcp-setup --force` rewrites part
+    files under the same names, which leaves the DIRECTORY's mtime alone."""
+    import os
+
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    part = parts / "9001.dat"
+    part.write_text("0 Widget Old\n")
+    (parts / "9002.dat").write_text("0 Gadget\n")
+    assert [p["part"] for p in bom.search_parts("widget old", tmp_path)["parts"]] == [
+        "9001.dat"
+    ]
+
+    dir_mtime = parts.stat().st_mtime_ns
+    part.write_text("0 Widget New\n")
+    stamp = part.stat().st_mtime_ns + 5_000_000_000
+    os.utime(part, ns=(stamp, stamp))
+    os.utime(parts, ns=(dir_mtime, dir_mtime))
+
+    assert bom.search_parts("widget old", tmp_path)["parts"] == []
+    assert bom.search_parts("widget new", tmp_path)["parts"] == [
+        {"part": "9001.dat", "description": "Widget New"}
+    ]
+    assert bom.search_parts("gadget", tmp_path)["total_matches"] == 1
+
+
 # --------------------------------------------------------------------------
 # through the protocol
 # --------------------------------------------------------------------------

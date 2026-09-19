@@ -1,0 +1,3 @@
+# Deliberate exceptions for scripts/wheel_smoke.py (repo-owned).
+# blender_script.py is executed BY Blender (blender --python ...); bpy exists only inside it.
+module:ldraw_mcp.blender_script

@@ -47,7 +47,10 @@ jobs:
           # Repo-specific system prerequisites (R for rpy2, OpenCV libs, ...) live in
           # scripts/guardrails-setup.sh so the template stays generic.
           if [ -x scripts/guardrails-setup.sh ]; then bash scripts/guardrails-setup.sh; fi
-          uv sync --all-extras --dev
+          # assignment, not inline $(...): a helper failure must stop the step
+          extras_s=$(python3 scripts/uv_extras.py)
+          read -ra extras <<<"$extras_s"
+          uv sync "${extras[@]}" --dev
           if [ -f requirements-dev.txt ]; then uv pip install -r requirements-dev.txt; fi
           uv pip install "mutmut==3.7.0" pytest
       - name: Baseline suite is green (a red baseline makes every mutant "killed")
@@ -280,8 +283,11 @@ jobs:
         id: audit
         run: |
           if [ -x scripts/guardrails-setup.sh ]; then bash scripts/guardrails-setup.sh; fi
-          uv sync --all-extras --dev
-          uv export --all-extras --dev --no-emit-project --no-hashes -o /tmp/req.txt
+          # assignment, not inline $(...): a helper failure must stop the step
+          extras_s=$(python3 scripts/uv_extras.py)
+          read -ra extras <<<"$extras_s"
+          uv sync "${extras[@]}" --dev
+          uv export "${extras[@]}" --dev --no-emit-project --no-hashes -o /tmp/req.txt
           set +e
           uvx pip-audit -r /tmp/req.txt --strict --desc on > /tmp/audit.txt 2>&1
           rc=$?
@@ -357,7 +363,10 @@ jobs:
           # Repo-specific system prerequisites (R for rpy2, OpenCV libs, ...) live in
           # scripts/guardrails-setup.sh so the template stays generic.
           if [ -x scripts/guardrails-setup.sh ]; then bash scripts/guardrails-setup.sh; fi
-          uv sync --all-extras --dev
+          # assignment, not inline $(...): a helper failure must stop the step
+          extras_s=$(python3 scripts/uv_extras.py)
+          read -ra extras <<<"$extras_s"
+          uv sync "${extras[@]}" --dev
           if [ -f requirements-dev.txt ]; then uv pip install -r requirements-dev.txt; fi
           uv pip install hypothesis pytest
       - uses: anthropics/claude-code-action@4169884de317bc1b4cb1b47f4476d76fed92b384 # v1

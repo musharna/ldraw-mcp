@@ -44,7 +44,7 @@ body:
     attributes:
       label: Version
       description: Output of `pip show ldraw-mcp` (or the version `uvx` pulled).
-      placeholder: "0.2.3"
+      placeholder: "0.3.0"
     validations:
       required: true
   - type: input

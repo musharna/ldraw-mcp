@@ -11,6 +11,8 @@ https://www.ldraw.org/article/47.html):
   - file names are case-insensitive and may use `\\` as the separator;
   - an MPD holds several files, each opened by `0 FILE <name>`; the first is
     the main model;
+  - a META keyword is case-sensitive: "The keyword must be in all caps"
+    (218.html, Line Type 0), so `0 File created by MLCad` is a comment;
   - colour 16 means "the colour of the line that referenced me"; 24 is the
     matching edge colour and is left as 24 in the rows, since it names no
     colour of its own.
@@ -99,7 +101,10 @@ def _split_sections(text: str, origin: str) -> tuple[str, dict[str, list[_Ref]]]
         if not tokens:
             continue
         if tokens[0] == "0":
-            meta = tokens[1].upper() if len(tokens) > 1 else ""
+            # Exact case, not .upper(): the spec requires META keywords in
+            # all caps, and `0 File ...` / `0 nofile ...` are comments that a
+            # case-folding match turned into section boundaries.
+            meta = tokens[1] if len(tokens) > 1 else ""
             if meta == "FILE" or meta == "!DATA":
                 name = normalise_name(raw.split(None, 2)[2]) if len(tokens) > 2 else ""
                 if not name:

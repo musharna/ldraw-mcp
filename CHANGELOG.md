@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+- **Every OSError is a refusal (#41).** `_REFUSALS` named `FileNotFoundError`
+  alone from the OSError family, so an unreadable model, a sibling reference
+  that is a directory, and an `LDRAW_MCP_BLENDER` that cannot be executed all
+  reached the caller as the bare `Error executing tool <name>`. The whole
+  family now surfaces its message; a `TypeError` is still masked. A Blender
+  exec failure is an `LDrawRenderError` naming the path, and both
+  `ldraw-mcp-setup` installers refuse an archive whose member the filesystem
+  rejects (e.g. a name past NAME_MAX) instead of crashing.
+- **Render arguments are bounded before Blender starts.** Blender clamps
+  rather than refuses, so a resolution of 3 returned a 4x4 image as a
+  success, and nothing capped the top end, so a resolution of 10**6 ran into
+  the 600 s timeout. Now: resolution 32..2048 per view, samples 1..1024,
+  1..8 finite azimuths, and resolution² × samples × views ≤ 2**27 (measured:
+  ~76 s on 16 CPU cores). Out of range is a refusal naming the argument.
+- **`render_ldraw_text` no longer leaks its temp model** when writing it
+  fails (e.g. a lone surrogate in the text).
+- **`serverInfo.version`** reports the installed package version instead of
+  `""`.
+- **`bill_of_materials`: META keywords are case-sensitive**, as the LDraw
+  File Format Specification requires ("The keyword must be in all caps").
+  The MLCad comment `0 File created by MLCad` no longer opens a new MPD
+  section and drops every part after it from the count.
+
 ## 0.3.0
 
 - **Three read-only query tools: `bill_of_materials`, `lookup_color`,
@@ -24,10 +49,9 @@
   paid for itself in the first run: the test expected Red to be `#C91A09`,
   which is Trans_Red; the real file says `#B40000`.
 
-
 - **Every refusal reaches the caller again.** mcp 2.1 treats an exception out
   of a tool that is not a `ToolError` as a crash: it answers `Error executing
-  tool <name>` and leaves the message in the server log. This package pins
+tool <name>` and leaves the message in the server log. This package pins
   `mcp>=2,<3` and has no lockfile, so a fresh install has been resolving 2.1
   and masking all of it — the path that did not exist, the azimuth that would
   not parse, and "run `ldraw-mcp-setup`", which is the only thing that makes an

@@ -34,24 +34,35 @@ from typing import Any
 from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
+from . import __version__
 from . import bom as ldraw_bom
 from . import render as ldraw_render
 
-mcp = MCPServer("ldraw")
+# Without `version` MCPServer answers initialize with serverInfo.version = "".
+# __version__ is read from the installed package metadata, so it cannot drift.
+mcp = MCPServer("ldraw", version=__version__)
 
 #: The exceptions a caller can do something about. Every one of them carries an
 #: instruction rather than a diagnosis - install Blender, run the setup, fix the
 #: path, fix the azimuth - which is why they have to arrive intact.
-#: `LDrawRenderError` is the render stack refusing; `FileNotFoundError` is a
-#: path that is not there; `ValueError` is `float()` on an azimuth that is not
-#: a number. A bug is a TypeError, an AttributeError, a KeyError - none of them
-#: here, so they stay masked, which is what masking is for.
+#: `LDrawRenderError` is the render stack refusing; `ValueError` is an argument
+#: out of range or `float()` on an azimuth that is not a number.
 #: `LDrawModelError` is the query tools refusing a model or a library: a
 #: reference cycle, a malformed line, a library that is not installed.
+#:
+#: `OSError` is the whole family, not `FileNotFoundError` alone. Every OSError
+#: these tools can raise is the filesystem answering about a path the caller
+#: or the caller's configuration named: a model that is not there, is not
+#: readable, is a directory, has a name the filesystem rejects; a
+#: `LDRAW_MCP_BLENDER` that cannot be executed (#41). Listing members one at a
+#: time is how PermissionError and IsADirectoryError stayed masked after
+#: FileNotFoundError was added. A bug is a TypeError, an AttributeError, a
+#: KeyError - none of them here, so they stay masked, which is what masking is
+#: for.
 _REFUSALS = (
     ldraw_render.LDrawRenderError,
     ldraw_bom.LDrawModelError,
-    FileNotFoundError,
+    OSError,
     ValueError,
 )
 
@@ -135,6 +146,8 @@ def render_ldraw_file(
 
     Views are rendered at each comma-separated azimuth (degrees) and
     stitched side by side. Higher samples = cleaner but slower.
+    Bounds: resolution 32..2048 px per view, samples 1..1024, 1..8 azimuths,
+    and resolution^2 x samples x views at most 2**27.
     """
     return _render(str(_existing_path(path)), azimuths, resolution, samples)
 
@@ -149,15 +162,16 @@ def render_ldraw_text(
 ) -> Image:
     """Render inline LDraw content (the text of a .ldr file) to a PNG.
 
-    Useful for quick experiments without writing a file first.
+    Useful for quick experiments without writing a file first. Same bounds
+    as render_ldraw_file.
     """
-    with tempfile.NamedTemporaryFile("w", suffix=".ldr", delete=False) as f:
-        f.write(ldr)
-        tmp = f.name
-    try:
-        return _render(tmp, azimuths, resolution, samples)
-    finally:
-        Path(tmp).unlink(missing_ok=True)
+    # The directory owns the file from before it exists, so a write that
+    # fails (a lone surrogate cannot be encoded) removes it too. A file made
+    # first and cleaned up in a later `finally` leaked in exactly that case.
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td) / "model.ldr"
+        tmp.write_text(ldr)
+        return _render(str(tmp), azimuths, resolution, samples)
 
 
 @mcp.tool()

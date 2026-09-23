@@ -20,6 +20,7 @@ import re
 import stat
 import sys
 import tempfile
+from importlib.metadata import version
 from pathlib import Path
 
 import pytest
@@ -285,3 +286,17 @@ def test_render_ldraw_text_leaves_no_temp_file_even_when_the_write_fails(
     assert not ok.is_error, _text(ok)
     assert seen == [BRICK]
     assert list(tmp_path.iterdir()) == []
+
+
+# ------------------------------------------------------------------ E
+
+
+def test_server_info_reports_the_installed_package_version():
+    async def info():
+        async with Client(mcp) as client:
+            return client.server_info
+
+    server_info = asyncio.run(info())
+    assert server_info.name == "ldraw"
+    assert server_info.version == version("ldraw-mcp")
+    assert server_info.version  # an empty string would equal an empty metadata field

@@ -34,10 +34,13 @@ from typing import Any
 from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
+from . import __version__
 from . import bom as ldraw_bom
 from . import render as ldraw_render
 
-mcp = MCPServer("ldraw")
+# Without `version` MCPServer answers initialize with serverInfo.version = "".
+# __version__ is read from the installed package metadata, so it cannot drift.
+mcp = MCPServer("ldraw", version=__version__)
 
 #: The exceptions a caller can do something about. Every one of them carries an
 #: instruction rather than a diagnosis - install Blender, run the setup, fix the

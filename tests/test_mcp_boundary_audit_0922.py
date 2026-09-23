@@ -19,6 +19,7 @@ import os
 import re
 import stat
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -256,3 +257,31 @@ def test_a_real_render_through_the_tool_has_the_requested_size():
 
     too_small = _render_text(resolution=3, samples=1, azimuths="0")
     assert too_small.is_error and "resolution" in _text(too_small)
+
+
+# ------------------------------------------------------------------ D
+
+
+def test_render_ldraw_text_leaves_no_temp_file_even_when_the_write_fails(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    seen = []
+
+    def spy_render(ldr_path, out, **kwargs):
+        seen.append(Path(ldr_path).read_text())
+        Path(out).write_bytes(b"\x89PNG\r\n\x1a\nfake")
+
+    monkeypatch.setattr(ldraw_render, "render_ldraw", spy_render)
+
+    # a lone surrogate cannot be encoded: the WRITE raises
+    failed = _render_text(ldr="0 x\n\ud800")
+    assert failed.is_error and "surrogates" in _text(failed)
+    assert seen == []
+    assert list(tmp_path.iterdir()) == []
+
+    # positive control: the text is written, handed over, and then removed
+    ok = _render_text(ldr=BRICK)
+    assert not ok.is_error, _text(ok)
+    assert seen == [BRICK]
+    assert list(tmp_path.iterdir()) == []

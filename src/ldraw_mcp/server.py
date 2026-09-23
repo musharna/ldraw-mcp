@@ -162,13 +162,13 @@ def render_ldraw_text(
     Useful for quick experiments without writing a file first. Same bounds
     as render_ldraw_file.
     """
-    with tempfile.NamedTemporaryFile("w", suffix=".ldr", delete=False) as f:
-        f.write(ldr)
-        tmp = f.name
-    try:
-        return _render(tmp, azimuths, resolution, samples)
-    finally:
-        Path(tmp).unlink(missing_ok=True)
+    # The directory owns the file from before it exists, so a write that
+    # fails (a lone surrogate cannot be encoded) removes it too. A file made
+    # first and cleaned up in a later `finally` leaked in exactly that case.
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td) / "model.ldr"
+        tmp.write_text(ldr)
+        return _render(str(tmp), azimuths, resolution, samples)
 
 
 @mcp.tool()

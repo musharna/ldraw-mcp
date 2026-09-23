@@ -137,3 +137,122 @@ def test_a_blender_that_cannot_be_executed_is_named_issue_41(monkeypatch, tmp_pa
     ran = _call("render_ldraw_file", {"path": str(model), "azimuths": "0"})
     assert ran.is_error
     assert "exit 3" in _text(ran)
+
+
+# ------------------------------------------------------------------ B and C
+
+
+@pytest.fixture
+def spied_blender(monkeypatch, tmp_path):
+    """A renderer that is 'available' and a subprocess spy that records the
+    command and stops there, so a refusal can be told from a render."""
+    monkeypatch.setenv("LDRAW_LIBRARY_PATH", str(FIXTURE_LIBRARY))
+    monkeypatch.setenv("LDRAW_MCP_BLENDER", sys.executable)
+    commands = []
+
+    def spy(cmd, **kwargs):
+        commands.append(cmd)
+        raise ldraw_render.subprocess.TimeoutExpired(cmd, 1)
+
+    monkeypatch.setattr(ldraw_render.subprocess, "run", spy)
+    return commands
+
+
+def _render_text(**kwargs):
+    return _call("render_ldraw_text", {"ldr": BRICK, **kwargs})
+
+
+@pytest.mark.parametrize(
+    "args, named",
+    [
+        ({"resolution": -5}, "resolution"),
+        ({"resolution": 0}, "resolution"),
+        ({"resolution": 3}, "resolution"),
+        ({"samples": 0}, "samples"),
+        ({"samples": -3}, "samples"),
+        ({"azimuths": "inf"}, "azimuth"),
+        ({"azimuths": "0,nan"}, "azimuth"),
+    ],
+)
+def test_out_of_range_render_parameters_are_refused_before_blender(
+    spied_blender, args, named
+):
+    refused = _render_text(**{"resolution": 64, "samples": 1, "azimuths": "0", **args})
+    assert refused.is_error
+    assert not _masked(refused)
+    assert named in _text(refused)
+    assert spied_blender == [], "refused, so Blender must never have been started"
+
+    # positive control: the lower edges themselves reach Blender unchanged
+    reached = _render_text(
+        resolution=ldraw_render.MIN_RESOLUTION, samples=1, azimuths="0"
+    )
+    assert "timed out" in _text(reached)
+    cmd = spied_blender[-1]
+    assert cmd[cmd.index("--resolution") + 1] == str(ldraw_render.MIN_RESOLUTION)
+    assert cmd[cmd.index("--samples") + 1] == "1"
+
+
+@pytest.mark.parametrize(
+    "args, named",
+    [
+        ({"resolution": 10**6}, "resolution"),
+        ({"samples": 10**9}, "samples"),
+        ({"azimuths": ",".join(["0"] * 5000)}, "azimuth"),
+        # each within its own bound, together far past a render that finishes
+        (
+            {
+                "resolution": 2048,
+                "samples": 1024,
+                "azimuths": ",".join(["0"] * 8),
+            },
+            "budget",
+        ),
+    ],
+)
+def test_render_parameters_have_upper_bounds(spied_blender, args, named):
+    refused = _render_text(**{"resolution": 64, "samples": 1, "azimuths": "0", **args})
+    assert refused.is_error
+    assert not _masked(refused)
+    assert named in _text(refused)
+    assert spied_blender == []
+
+    # positive control: the upper edge of each bound alone reaches Blender
+    for edge in (
+        {"resolution": ldraw_render.MAX_RESOLUTION, "samples": 1, "azimuths": "0"},
+        {"resolution": 64, "samples": ldraw_render.MAX_SAMPLES, "azimuths": "0"},
+        {
+            "resolution": 64,
+            "samples": 1,
+            "azimuths": ",".join(["0"] * ldraw_render.MAX_VIEWS),
+        },
+    ):
+        reached = _render_text(**edge)
+        assert "timed out" in _text(reached), edge
+    # the tools' own defaults sit well inside the budget
+    assert "timed out" in _text(_render_text())
+
+
+@pytest.mark.skipif(
+    not ldraw_render.is_available(), reason="blender/LDraw stack not installed"
+)
+def test_a_real_render_through_the_tool_has_the_requested_size():
+    """Real execution: Blender through the MCP boundary. The image is the size
+    asked for, which is what a clamped resolution silently broke."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    result = _render_text(
+        ldr="1 4 10 -24 10 1 0 0 0 1 0 0 0 1 3005.dat\n",
+        resolution=48,
+        samples=2,
+        azimuths="-60",
+    )
+    assert not result.is_error, _text(result)
+    image = Image.open(io.BytesIO(base64.b64decode(result.content[0].data)))
+    assert image.size == (48, 48)
+
+    too_small = _render_text(resolution=3, samples=1, azimuths="0")
+    assert too_small.is_error and "resolution" in _text(too_small)

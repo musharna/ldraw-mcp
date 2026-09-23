@@ -15,6 +15,7 @@ Environment variables:
   LDRAW_LIBRARY_PATH   path to the LDraw parts library
 """
 
+import math
 import os
 import shutil
 import subprocess
@@ -78,6 +79,51 @@ class LDrawRenderError(Exception):
     """Blender render failed or is unavailable."""
 
 
+# Bounds on what a caller may ask Blender for. Below them Blender does not
+# refuse, it CLAMPS: a resolution of 3 rendered a 4x4 image and the tool
+# reported success. Above them nothing refused either, and a resolution of 10**6
+# ran into the timeout. Both have to be decided here, before Blender starts.
+#
+# MIN_RESOLUTION: well under anything legible, well above Blender's clamp at 4.
+# The per-view caps bound each argument alone; MAX_PIXEL_SAMPLES bounds the
+# work they multiply into (resolution^2 x samples x views). MEASURED, Cycles CPU
+# on 16 cores, one view of one brick: 640^2 x 24 (9.8M) in 19 s, 1024^2 x 128
+# (134M) in 76 s. The budget is that second point: about 4x under the 600 s
+# timeout here, so a slower host still finishes. The tools' default
+# (640^2 x 24 x 2 views = 19.7M) is about 7x inside it.
+MIN_RESOLUTION = 32
+MAX_RESOLUTION = 2048
+MAX_SAMPLES = 1024
+MAX_VIEWS = 8
+MAX_PIXEL_SAMPLES = 2**27
+
+
+def check_render_request(
+    azimuths: Sequence[float], samples: int, resolution: int
+) -> None:
+    """Raise ValueError, naming the argument and its bound, for a request
+    Blender would clamp, reject late, or not finish."""
+    if not MIN_RESOLUTION <= resolution <= MAX_RESOLUTION:
+        raise ValueError(
+            f"resolution {resolution} is outside {MIN_RESOLUTION}..{MAX_RESOLUTION}"
+        )
+    if not 1 <= samples <= MAX_SAMPLES:
+        raise ValueError(f"samples {samples} is outside 1..{MAX_SAMPLES}")
+    if not 1 <= len(azimuths) <= MAX_VIEWS:
+        raise ValueError(
+            f"{len(azimuths)} azimuths given; between 1 and {MAX_VIEWS} views are rendered"
+        )
+    bad = [a for a in azimuths if not math.isfinite(a)]
+    if bad:
+        raise ValueError(f"azimuth {bad[0]} is not a finite number of degrees")
+    work = resolution * resolution * samples * len(azimuths)
+    if work > MAX_PIXEL_SAMPLES:
+        raise ValueError(
+            f"resolution^2 x samples x views = {work} is over the render budget of "
+            f"{MAX_PIXEL_SAMPLES}; lower one of them"
+        )
+
+
 def find_blender() -> str | None:
     env = os.environ.get("LDRAW_MCP_BLENDER")
     if env and Path(env).exists():
@@ -114,6 +160,7 @@ def render_ldraw(
     timeout: int = 600,
 ) -> str:
     """Render an .ldr file to a single side-by-side PNG of `azimuths` views."""
+    check_render_request(azimuths, samples, resolution)
     blender = find_blender()
     library = ldraw_library_dir()
     if blender is None or library is None:

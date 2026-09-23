@@ -143,6 +143,8 @@ def render_ldraw_file(
 
     Views are rendered at each comma-separated azimuth (degrees) and
     stitched side by side. Higher samples = cleaner but slower.
+    Bounds: resolution 32..2048 px per view, samples 1..1024, 1..8 azimuths,
+    and resolution^2 x samples x views at most 2**27.
     """
     return _render(str(_existing_path(path)), azimuths, resolution, samples)
 
@@ -157,7 +159,8 @@ def render_ldraw_text(
 ) -> Image:
     """Render inline LDraw content (the text of a .ldr file) to a PNG.
 
-    Useful for quick experiments without writing a file first.
+    Useful for quick experiments without writing a file first. Same bounds
+    as render_ldraw_file.
     """
     with tempfile.NamedTemporaryFile("w", suffix=".ldr", delete=False) as f:
         f.write(ldr)

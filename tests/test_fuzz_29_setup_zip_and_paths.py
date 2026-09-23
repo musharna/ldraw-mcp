@@ -145,3 +145,36 @@ def test_unusable_paths_are_refusals_that_name_the_problem(monkeypatch, tmp_path
     assert _text(result).strip() != "Error executing tool render_ldraw_file"
     assert "~nonexistentuser123" in _text(result)
     assert seen == [str(real)]
+
+
+# ------------------------------------------------------------ issue #41, part 2
+
+
+def test_a_member_the_filesystem_rejects_is_a_refused_archive(monkeypatch, tmp_path):
+    """A member name past NAME_MAX raises OSError (ENAMETOOLONG) from `open`,
+    not ValueError, and escaped both installers as a traceback (#41). Any
+    OSError there is the archive being unusable here, like a zip-slip member."""
+    too_long = "a" * 300  # NAME_MAX is 255 on ext4, tmpfs, APFS, NTFS
+
+    good = _zip({"ldraw/parts/3001.dat": "0 brick"})
+    _serve(monkeypatch, lambda url: good)
+    assert setup_cli.install_ldraw_library(tmp_path / "ok") is True
+    assert (tmp_path / "ok" / "parts" / "3001.dat").read_text() == "0 brick"
+
+    bad = _zip({"ldraw/parts/3001.dat": "0 brick", "ldraw/" + too_long: "x"})
+    _serve(monkeypatch, lambda url: bad)
+    assert setup_cli.install_ldraw_library(tmp_path / "lib", force=True) is False
+
+    ok_dir = tmp_path / "addons-ok"
+    good_addon = _zip({"addon-1.0/__init__.py": "x = 1"})
+    _serve(monkeypatch, _addon_server(good_addon))
+    assert setup_cli.install_importldraw_addon([ok_dir]) is True
+    assert (ok_dir / "io_scene_importldraw" / "__init__.py").exists()
+
+    bad_addon = _zip(
+        {"addon-1.0/__init__.py": "x = 1", f"addon-1.0/{too_long}.py": "x"}
+    )
+    _serve(monkeypatch, _addon_server(bad_addon))
+    assert (
+        setup_cli.install_importldraw_addon([tmp_path / "addons"], force=True) is False
+    )

@@ -42,16 +42,24 @@ mcp = MCPServer("ldraw")
 #: The exceptions a caller can do something about. Every one of them carries an
 #: instruction rather than a diagnosis - install Blender, run the setup, fix the
 #: path, fix the azimuth - which is why they have to arrive intact.
-#: `LDrawRenderError` is the render stack refusing; `FileNotFoundError` is a
-#: path that is not there; `ValueError` is `float()` on an azimuth that is not
-#: a number. A bug is a TypeError, an AttributeError, a KeyError - none of them
-#: here, so they stay masked, which is what masking is for.
+#: `LDrawRenderError` is the render stack refusing; `ValueError` is an argument
+#: out of range or `float()` on an azimuth that is not a number.
 #: `LDrawModelError` is the query tools refusing a model or a library: a
 #: reference cycle, a malformed line, a library that is not installed.
+#:
+#: `OSError` is the whole family, not `FileNotFoundError` alone. Every OSError
+#: these tools can raise is the filesystem answering about a path the caller
+#: or the caller's configuration named: a model that is not there, is not
+#: readable, is a directory, has a name the filesystem rejects; a
+#: `LDRAW_MCP_BLENDER` that cannot be executed (#41). Listing members one at a
+#: time is how PermissionError and IsADirectoryError stayed masked after
+#: FileNotFoundError was added. A bug is a TypeError, an AttributeError, a
+#: KeyError - none of them here, so they stay masked, which is what masking is
+#: for.
 _REFUSALS = (
     ldraw_render.LDrawRenderError,
     ldraw_bom.LDrawModelError,
-    FileNotFoundError,
+    OSError,
     ValueError,
 )
 

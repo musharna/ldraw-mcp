@@ -148,6 +148,13 @@ def render_ldraw(
             )
         except subprocess.TimeoutExpired:
             raise LDrawRenderError(f"blender render timed out after {timeout}s")
+        except OSError as exc:
+            # find_blender() checks that the path exists, not that it can be
+            # executed: a directory or a file without +x gets this far (#41).
+            raise LDrawRenderError(
+                f"cannot execute blender at {blender!r}: "
+                f"{exc.strerror or exc} (set LDRAW_MCP_BLENDER to the blender binary)"
+            ) from exc
         views = [Path(f"{prefix}_{i}.png") for i in range(len(azimuths))]
         missing = [v for v in views if not v.exists()]
         if proc.returncode != 0 or missing:

@@ -93,7 +93,10 @@ def install_ldraw_library(ldraw_dir: Path, force: bool = False) -> bool:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     with zf.open(member) as src, open(target, "wb") as dst:
                         dst.write(src.read())
-    except (zipfile.BadZipFile, ValueError) as exc:
+    # OSError: the filesystem refusing a member (name too long, a component
+    # that is an existing file, ENOSPC) is the archive being unusable here,
+    # the same as a zip-slip member, not a crash (#41).
+    except (zipfile.BadZipFile, ValueError, OSError) as exc:
         _log(f"[ldraw] refusing the downloaded archive: {exc}")
         _log(
             "[ldraw] manual step: download complete.zip from\n"
@@ -229,7 +232,10 @@ def install_importldraw_addon(addon_dirs: list[Path], force: bool = False) -> bo
                 if not (dest / "__init__.py").exists():
                     _log(f"[addon] WARNING: {dest}/__init__.py missing after install")
                     ok = False
-    except (zipfile.BadZipFile, ValueError) as exc:
+    # OSError: the filesystem refusing a member (name too long, a component
+    # that is an existing file, ENOSPC) is the archive being unusable here,
+    # the same as a zip-slip member, not a crash (#41).
+    except (zipfile.BadZipFile, ValueError, OSError) as exc:
         _log(f"[addon] refusing the downloaded archive: {exc}")
         _log(
             f"[addon] manual step: download the addon zip from {IMPORTLDRAW_RELEASES_PAGE}\n"

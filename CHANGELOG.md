@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.1
+
 - **Every OSError is a refusal (#41).** `_REFUSALS` named `FileNotFoundError`
   alone from the OSError family, so an unreadable model, a sibling reference
   that is a directory, and an `LDRAW_MCP_BLENDER` that cannot be executed all

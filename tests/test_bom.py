@@ -104,6 +104,30 @@ def test_reference_names_are_case_insensitive_and_accept_backslashes():
     }
 
 
+def test_meta_keywords_are_case_sensitive_so_a_comment_does_not_open_a_file():
+    """LDraw File Format 1.0.2: "In a META command, a keyword follows the line
+    type in the line. The keyword must be in all caps." So `0 File created by
+    MLCad` is a comment, not `0 FILE`; read as one it opened an unreferenced
+    section and every part after it vanished from the count."""
+    text = "\n".join(
+        [
+            "0 FILE a.ldr",
+            _line(4, "3001.dat"),
+            "0 File created by MLCad 3.40",
+            _line(4, "3001.dat"),
+            "0 nofile is not NOFILE either",
+            _line(4, "3001.dat"),
+            "0 !data is not !DATA",
+            _line(4, "3001.dat"),
+            # positive control: the all-caps keyword still opens a section,
+            # and an unreferenced section's parts are not counted in the main
+            "0 FILE unused.ldr",
+            _line(4, "3002.dat"),
+        ]
+    )
+    assert _rows(bom.bill_of_materials(text=text)) == {("3001.dat", 4): 4}
+
+
 def test_reference_cycle_raises_the_named_error_and_the_acyclic_variant_counts():
     def model(b_refers_to):
         return "\n".join(

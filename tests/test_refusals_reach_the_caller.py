@@ -73,9 +73,7 @@ def test_an_unavailable_renderer_still_says_how_to_install_it(monkeypatch):
     """
     monkeypatch.setattr(ldraw_render, "find_blender", lambda: None)
 
-    result = asyncio.run(
-        _call("render_ldraw_file", {"path": __file__})
-    )
+    result = asyncio.run(_call("render_ldraw_file", {"path": __file__}))
 
     assert result.is_error
     assert "ldraw-mcp-setup" in _text(result)

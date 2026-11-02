@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Python 3.11+** (`requires-python = ">=3.11"`). Pillow 13, the release that
+  fixes the open Pillow advisories, needs 3.11, so on 3.10 the resolver picked
+  pillow 12.3.0 (59 OSV advisories; dependency-audit issue #86). CI drops its
+  3.10 job and the tests drop the `tomli` fallback. On 3.10, pip keeps
+  resolving to 0.3.1.
+
 ## 0.3.1
 
 - **Every OSError is a refusal (#41).** `_REFUSALS` named `FileNotFoundError`

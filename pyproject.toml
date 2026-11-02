@@ -7,7 +7,7 @@ name = "ldraw-mcp"
 version = "0.3.1"
 description = "MCP server that renders LDraw/LEGO models to images with real part geometry via headless Blender + ImportLDraw, and answers bill-of-materials, colour and part queries."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Jaret Arnold" }]
 keywords = ["mcp", "ldraw", "lego", "blender", "render", "bom"]
@@ -21,7 +21,8 @@ dependencies = [
     # dependabot proposed in #7, and why that PR broke the build. This package
     # imports mcp.server.mcpserver, absent in 1.x, so a range spanning both
     # majors can resolve to a version that cannot import the server. mcp 2.x
-    # requires Python >=3.10, exactly this package's floor.
+    # requires Python >=3.10; this package's floor is 3.11, because pillow 13
+    # (the release that fixes the open Pillow advisories) needs it.
     "mcp>=2,<3",
     "pillow",
 ]
@@ -31,7 +32,7 @@ dependencies = [
 # runners that have no Blender. Without it that control ImportErrors, and the
 # only thing that keeps it green today is the module-level skip it should not
 # have been under.
-test = ["pytest", "numpy", "tomli; python_version < '3.11'"]
+test = ["pytest", "numpy"]
 
 [project.scripts]
 ldraw-mcp = "ldraw_mcp.server:main"

@@ -15,6 +15,7 @@ parts library (default ~/.ldraw).
 """
 
 import argparse
+import json
 import math
 import sys
 from pathlib import Path
@@ -41,9 +42,47 @@ def enable_addon():
     # enable() signals a missing add-on by returning None (it prints the cause and
     # does not raise), so success is the return value, not the absence of an error.
     for name in ("io_scene_importldraw", "importldraw"):
-        if addon_utils.enable(name, default_set=True) is not None:
-            return
+        module = addon_utils.enable(name, default_set=True)
+        if module is not None:
+            return module
     raise RuntimeError("ImportLDraw addon not found in Blender addons")
+
+
+# The one line render.py reads back: a JSON object after this prefix. Printed
+# once, after the import, on every run that gets that far.
+REPORT_PREFIX = "LDRAW_MCP_REPORT "
+
+
+def watch_file_lookups(addon):
+    """Record every file the importer looks for and does not find.
+
+    ImportLDraw resolves each referenced file through `FileSystem.locate`; on
+    None it logs "Missing file" and SKIPS the reference, so the part is simply
+    absent from the picture. Watching that one call reports exactly what the
+    importer dropped, which a second lookup of our own could disagree with
+    (it searches the model's directory, `parts/`, `p/`, `models/` and the
+    unofficial folders, in its own order).
+    """
+    name = addon.__name__ + ".loadldraw.loadldraw"
+    loader = sys.modules.get(name)
+    file_system = getattr(loader, "FileSystem", None)
+    original = getattr(file_system, "locate", None)
+    if original is None:
+        # Fail loud: without the hook a missing part would vanish unreported.
+        raise RuntimeError(
+            f"ImportLDraw has no {name}.FileSystem.locate to watch; this add-on "
+            "version is not one ldraw-mcp knows how to check for missing parts"
+        )
+    missing = []
+
+    def locate(filename, rootPath=None):
+        found = original(filename, rootPath)
+        if found is None and filename not in missing:
+            missing.append(filename)
+        return found
+
+    file_system.locate = locate
+    return missing
 
 
 def scene_bounds():
@@ -96,7 +135,8 @@ def main():
     enable_addon()
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    enable_addon()  # factory reset drops enabled addons
+    addon = enable_addon()  # factory reset drops enabled addons
+    missing = watch_file_lookups(addon)
 
     # the addon's look setup assumes a world exists; empty scenes have none
     world = bpy.data.worlds.new("World")
@@ -118,6 +158,9 @@ def main():
         bevelEdges=True,
         look="normal",
     )
+    # Before scene_bounds, so a model whose every part is missing still says
+    # which ones.
+    print(REPORT_PREFIX + json.dumps({"missing": missing}), flush=True)
 
     lo, hi = scene_bounds()
     center = [(a + b) / 2 for a, b in zip(lo, hi)]

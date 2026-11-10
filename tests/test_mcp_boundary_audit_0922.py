@@ -272,8 +272,9 @@ def test_render_ldraw_text_leaves_no_temp_file_even_when_the_write_fails(
     def spy_render(ldr_path, out, **kwargs):
         seen.append(Path(ldr_path).read_text())
         Path(out).write_bytes(b"\x89PNG\r\n\x1a\nfake")
+        return ldraw_render.RenderResult(out, ())
 
-    monkeypatch.setattr(ldraw_render, "render_ldraw", spy_render)
+    monkeypatch.setattr(ldraw_render, "render_ldraw_report", spy_render)
 
     # a lone surrogate cannot be encoded: the WRITE raises
     failed = _render_text(ldr="0 x\n\ud800")

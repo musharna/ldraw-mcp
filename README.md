@@ -65,6 +65,10 @@ wrong"_ — the model sees the render, not just the text.
 rendered and the views are stitched horizontally. Elevation is fixed at
 22°. Higher `samples` = cleaner but slower.
 
+A part the LDraw library does not have cannot be drawn. The render tools still
+return the picture of the rest, followed by a text block that names each file
+the importer could not find. When every file is found, the image comes alone.
+
 The three query tools are read-only and need no Blender. `bill_of_materials`
 expands MPD sub-models (and sibling `.ldr`/`.mpd` files next to the model) with
 their multiplicity, and resolves colour 16 to the colour of the referencing

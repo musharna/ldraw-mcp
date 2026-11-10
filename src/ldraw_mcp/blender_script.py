@@ -7,7 +7,8 @@ Runs INSIDE Blender (never import this from the package):
 
 Renders one PNG per azimuth to <prefix>_<i>.png using Cycles CPU (works
 headless everywhere, including WSL2 without a GPU). Camera orbits the
-model bounding box at a fixed elevation.
+centre of the model's bounding box at a fixed elevation, far enough out
+that the bounding sphere fits the frame (see framing_distance).
 
 Requires the ImportLDraw addon (io_scene_importldraw) and an LDraw
 parts library (default ~/.ldraw).
@@ -61,6 +62,35 @@ def scene_bounds():
     return lo, hi
 
 
+# How far outside the model's bounding sphere the frame stops: 1.1 leaves the
+# sphere's outline at 90% of the half-frame, so even the sphere is 5% clear of
+# every edge, and the model, which lies inside it, is clearer still.
+FRAME_MARGIN = 1.1
+
+
+def framing_distance(lo, hi, cam_data, res_x, res_y):
+    """Camera-to-centre distance at which the whole model is in frame from ANY
+    azimuth and elevation, with the camera aimed at the centre of the bounds.
+
+    The bounding sphere is the quantity that does not depend on the view: every
+    point of the model lies inside it, and a sphere of radius r seen from
+    distance d fills a cone of half-angle asin(r / d) around the line of sight,
+    perspective included. Keeping that cone inside the NARROWER half of the
+    field of view keeps the model inside the frame.
+
+    The longest side, which this used to scale (`2.2 x span`), does not bound a
+    box's diagonal: an 80 x 80 x 76 LDU cube has a sphere radius of 0.85 x its
+    longest side and came back cut off at two edges.
+    """
+    radius = 0.5 * math.dist(lo, hi)
+    # cam_data.angle is the field of view across the sensor-fit axis, which for
+    # the default AUTO fit is the larger render dimension; the other axis is
+    # narrower by the aspect ratio.
+    half_wide = cam_data.angle / 2
+    half_narrow = math.atan(math.tan(half_wide) * min(res_x, res_y) / max(res_x, res_y))
+    return FRAME_MARGIN * radius / math.sin(half_narrow)
+
+
 def main():
     args = parse_args()
     enable_addon()
@@ -91,8 +121,6 @@ def main():
 
     lo, hi = scene_bounds()
     center = [(a + b) / 2 for a, b in zip(lo, hi)]
-    span = max(b - a for a, b in zip(lo, hi))
-    distance = span * 2.2
 
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
@@ -109,6 +137,7 @@ def main():
     scene.collection.objects.link(sun)
 
     cam_data = bpy.data.cameras.new("Cam")
+    distance = framing_distance(lo, hi, cam_data, args.resolution, args.resolution)
     # Clip planes must come from the same scene scale the camera distance does.
     # ImportLDraw imports at real-world metre scale, so a small model spans
     # centimetres and sits *inside* Blender's default 0.1 m near plane — it gets

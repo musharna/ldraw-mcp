@@ -7,6 +7,13 @@
   pillow 12.3.0 (59 OSV advisories; dependency-audit issue #86). CI drops its
   3.10 job and the tests drop the `tomli` fallback. On 3.10, pip keeps
   resolving to 0.3.1.
+- **Renders no longer crop near-cubic models.** The camera stood 2.2 times the
+  model's longest side away, which does not cover a box's diagonal: a
+  3-brick-high 4x4 cube came back cut off at the left and bottom edges in both
+  default views, as a normal image. The camera now stands where the model's
+  bounding sphere fits the narrower half of the field of view, with a 10%
+  margin, so the model is whole from any azimuth. A single brick comes out
+  about the same size as before; towers and long plates come out larger.
 
 ## 0.3.1
 

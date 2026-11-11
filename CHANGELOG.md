@@ -34,6 +34,10 @@
   Sibling files and library parts are followed as before. Behavior change:
   `bill_of_materials` now also refuses such names where it used to count them
   as parts not in the library (an absolute path in inline text, `..\x.dat`).
+- **`LDRAW_MCP_DISABLE=1` now stops renders.** It made `check_renderer` report
+  `available: False`, but the render tools still started Blender and returned
+  a picture. They now refuse with a message naming the variable, before
+  Blender starts.
 
 ## 0.3.1
 

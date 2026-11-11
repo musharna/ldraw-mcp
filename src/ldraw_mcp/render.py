@@ -11,7 +11,8 @@ callers check is_available() or catch LDrawRenderError.
 
 Environment variables:
   LDRAW_MCP_BLENDER   path to the blender binary (overrides PATH lookup)
-  LDRAW_MCP_DISABLE   set to "1" to force is_available() to False
+  LDRAW_MCP_DISABLE   set to "1" to turn rendering off: is_available() is
+                      False and render_ldraw() refuses
   LDRAW_LIBRARY_PATH   path to the LDraw parts library
 """
 
@@ -178,8 +179,12 @@ def ldraw_library_dir() -> Path | None:
     return None
 
 
+def _disabled() -> bool:
+    return os.environ.get("LDRAW_MCP_DISABLE") == "1"
+
+
 def is_available() -> bool:
-    if os.environ.get("LDRAW_MCP_DISABLE") == "1":
+    if _disabled():
         return False
     return find_blender() is not None and ldraw_library_dir() is not None
 
@@ -216,6 +221,12 @@ def render_ldraw_report(
     timeout: int = 600,
 ) -> RenderResult:
     """`render_ldraw`, plus the files ImportLDraw could not find."""
+    # The switch has to stop the render itself: it once only changed what
+    # is_available() reported, and the tools rendered anyway.
+    if _disabled():
+        raise LDrawRenderError(
+            "rendering is disabled (LDRAW_MCP_DISABLE=1); unset it to render"
+        )
     check_render_request(azimuths, samples, resolution)
     blender = find_blender()
     library = ldraw_library_dir()

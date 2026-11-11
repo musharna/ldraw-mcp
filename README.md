@@ -98,11 +98,11 @@ library (`ldraw-mcp-setup`).
 
 ### Environment variables
 
-| var                  | meaning                                                |
-| -------------------- | ------------------------------------------------------ |
-| `LDRAW_MCP_BLENDER`  | Path to the blender binary (overrides `PATH` lookup)   |
-| `LDRAW_MCP_DISABLE`  | Set to `1` to force `is_available()` to `False`        |
-| `LDRAW_LIBRARY_PATH` | Path to the LDraw parts library (community convention) |
+| var                  | meaning                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `LDRAW_MCP_BLENDER`  | Path to the blender binary (overrides `PATH` lookup)                                    |
+| `LDRAW_MCP_DISABLE`  | Set to `1` to turn rendering off: `check_renderer` reports unavailable, renders refuse  |
+| `LDRAW_LIBRARY_PATH` | Path to the LDraw parts library (community convention)                                  |
 
 ### Manual setup
 

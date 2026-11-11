@@ -21,6 +21,7 @@ reference needs to leave those folders.
 
 import asyncio
 import json
+import re
 
 import pytest
 from mcp.client import Client
@@ -45,6 +46,16 @@ def _call(name, args):
 
 def _text(result):
     return "".join(b.text for b in result.content if b.type == "text")
+
+
+def _refusal(result, tool):
+    """The refusal message without the `Error executing tool <name>: ` prefix
+    mcp puts on every ToolError, which differs between the two tools."""
+    match = re.fullmatch(
+        rf"Error executing tool {tool}: (.+)", _text(result), re.DOTALL
+    )
+    assert match, (tool, _text(result))
+    return match.group(1)
 
 
 def test_the_rule_refuses_every_way_out_and_passes_library_names():
@@ -142,10 +153,8 @@ def test_render_and_parts_list_refuse_the_same_references(tmp_path):
         assert rendered.is_error, (case, [b.type for b in rendered.content])
         assert listed.is_error, case
         assert "refusing to follow it" in _text(rendered), (case, _text(rendered))
-        # The same check produced both messages.
-        assert _text(rendered).split(": ", 1)[1] == _text(listed).split(": ", 1)[1], (
-            case
-        )
+        # The same check produced both messages, word for word.
+        assert _refusal(rendered, tool) == _refusal(listed, "bill_of_materials"), case
 
     # Positive control: a sibling file is followed by both.
     sibling = {"path": model("sibling.ldr", "sub.ldr")}

@@ -69,6 +69,13 @@ A part the LDraw library does not have cannot be drawn. The render tools still
 return the picture of the rest, followed by a text block that names each file
 the importer could not find. When every file is found, the image comes alone.
 
+The render tools and `bill_of_materials` follow the same references. Files
+next to the model (`sub.ldr`, `models/wheel.ldr`) and library parts are
+followed. A reference that could leave the folder it is looked up in (`..`,
+an absolute path, a drive, `~`), or a file in the model's folder that links
+outside it, is refused with the same message by every tool. Inline text
+follows the same rule.
+
 The three query tools are read-only and need no Blender. `bill_of_materials`
 expands MPD sub-models (and sibling `.ldr`/`.mpd` files next to the model) with
 their multiplicity, and resolves colour 16 to the colour of the referencing

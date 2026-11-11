@@ -23,6 +23,17 @@
   dropped. A model with every part present returns the image alone. Library
   callers get the list from the new `render.render_ldraw_report()`;
   `render_ldraw()` still returns the PNG path.
+- **The render tools refuse the references the parts list refuses.**
+  `bill_of_materials` refused `..\outside\secret.ldr`, but `render_ldraw_file`
+  followed it and drew the outside model, and `render_ldraw_text` followed an
+  absolute path to any existing file. One rule now lives in
+  `bom.check_reference` and `bom.check_inside`: no `..`, `.` or empty segment,
+  no absolute path, drive or `~`, and no file in the model's folder that links
+  outside it. The renderer applies the same two functions inside Blender to
+  every file the importer looks up, and refuses with the parts list's message.
+  Sibling files and library parts are followed as before. Behavior change:
+  `bill_of_materials` now also refuses such names where it used to count them
+  as parts not in the library (an absolute path in inline text, `..\x.dat`).
 
 ## 0.3.1
 

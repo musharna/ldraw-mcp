@@ -15,12 +15,29 @@ parts library (default ~/.ldraw).
 """
 
 import argparse
+import importlib.util
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
 import bpy
+
+
+def _load_reference_rule():
+    """The package's bom.py, loaded by path: the one place the reference rule
+    lives, shared with bill_of_materials. Blender's Python does not have the
+    package installed, and bom.py needs nothing beyond the standard library."""
+    path = Path(__file__).resolve().parent / "bom.py"
+    spec = importlib.util.spec_from_file_location("ldraw_mcp_bom", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses look the module up by name
+    spec.loader.exec_module(module)
+    return module
+
+
+ldraw_bom = _load_reference_rule()
 
 
 def parse_args():
@@ -53,8 +70,9 @@ def enable_addon():
 REPORT_PREFIX = "LDRAW_MCP_REPORT "
 
 
-def watch_file_lookups(addon):
-    """Record every file the importer looks for and does not find.
+def watch_file_lookups(addon, model_dir):
+    """Record every file the importer looks for and does not find, and refuse
+    every reference the parts list refuses.
 
     ImportLDraw resolves each referenced file through `FileSystem.locate`; on
     None it logs "Missing file" and SKIPS the reference, so the part is simply
@@ -62,6 +80,12 @@ def watch_file_lookups(addon):
     importer dropped, which a second lookup of our own could disagree with
     (it searches the model's directory, `parts/`, `p/`, `models/` and the
     unofficial folders, in its own order).
+
+    The same call is where a reference becomes a path, so the reference rule
+    is applied there, through bom.py's own functions: the name first, then,
+    for a file found in the model's folder, where it really is. A refused
+    reference is not looked up (the importer skips it as missing) and is
+    reported under "refused", which stops the render.
     """
     name = addon.__name__ + ".loadldraw.loadldraw"
     loader = sys.modules.get(name)
@@ -73,16 +97,30 @@ def watch_file_lookups(addon):
             f"ImportLDraw has no {name}.FileSystem.locate to watch; this add-on "
             "version is not one ldraw-mcp knows how to check for missing parts"
         )
-    missing = []
+    model_dir = os.path.abspath(model_dir)
+    resolved_dir = Path(model_dir).resolve()
+    missing, refused = [], []
 
     def locate(filename, rootPath=None):
-        found = original(filename, rootPath)
+        try:
+            ldraw_bom.check_reference(filename)
+            found = original(filename, rootPath)
+            if found is not None and Path(os.path.abspath(found)).is_relative_to(
+                model_dir
+            ):
+                ldraw_bom.check_inside(
+                    Path(found), resolved_dir, ldraw_bom.normalise_name(filename)
+                )
+        except ldraw_bom.LDrawModelError as exc:
+            if str(exc) not in refused:
+                refused.append(str(exc))
+            return None
         if found is None and filename not in missing:
             missing.append(filename)
         return found
 
     file_system.locate = locate
-    return missing
+    return missing, refused
 
 
 def scene_bounds():
@@ -136,7 +174,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     addon = enable_addon()  # factory reset drops enabled addons
-    missing = watch_file_lookups(addon)
+    missing, refused = watch_file_lookups(addon, os.path.dirname(args.ldr))
 
     # the addon's look setup assumes a world exists; empty scenes have none
     world = bpy.data.worlds.new("World")
@@ -160,7 +198,12 @@ def main():
     )
     # Before scene_bounds, so a model whose every part is missing still says
     # which ones.
-    print(REPORT_PREFIX + json.dumps({"missing": missing}), flush=True)
+    print(
+        REPORT_PREFIX + json.dumps({"missing": missing, "refused": refused}),
+        flush=True,
+    )
+    if refused:
+        sys.exit(3)  # a refused model is not rendered, not even in part
 
     lo, hi = scene_bounds()
     center = [(a + b) / 2 for a, b in zip(lo, hi)]

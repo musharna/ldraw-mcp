@@ -25,6 +25,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import bom as ldraw_bom
+
 BLENDER_SCRIPT = Path(__file__).parent / "blender_script.py"
 
 # These two are exactly 180 degrees apart, which LOOKS like a mistake: on a
@@ -257,6 +259,12 @@ def render_ldraw_report(
                 f"{exc.strerror or exc} (set LDRAW_MCP_BLENDER to the blender binary)"
             ) from exc
         report = _read_report(proc.stdout)
+        refused = (report or {}).get("refused") or []
+        if refused:
+            # The reference rule refused the model inside Blender. Same check,
+            # same error as bill_of_materials gives for this model.
+            more = f" (and {len(refused) - 1} more)" if len(refused) > 1 else ""
+            raise ldraw_bom.LDrawModelError(refused[0] + more)
         views = [Path(f"{prefix}_{i}.png") for i in range(len(azimuths))]
         missing = [v for v in views if not v.exists()]
         if proc.returncode != 0 or missing:

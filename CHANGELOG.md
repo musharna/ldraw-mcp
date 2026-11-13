@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0
+
 - **Python 3.11+** (`requires-python = ">=3.11"`). Pillow 13, the release that
   fixes the open Pillow advisories, needs 3.11, so on 3.10 the resolver picked
   pillow 12.3.0 (59 OSV advisories; dependency-audit issue #86). CI drops its

@@ -11,17 +11,22 @@ callers check is_available() or catch LDrawRenderError.
 
 Environment variables:
   LDRAW_MCP_BLENDER   path to the blender binary (overrides PATH lookup)
-  LDRAW_MCP_DISABLE   set to "1" to force is_available() to False
+  LDRAW_MCP_DISABLE   set to "1" to turn rendering off: is_available() is
+                      False and render_ldraw() refuses
   LDRAW_LIBRARY_PATH   path to the LDraw parts library
 """
 
+import json
 import math
 import os
 import shutil
 import subprocess
 import tempfile
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
+
+from . import bom as ldraw_bom
 
 BLENDER_SCRIPT = Path(__file__).parent / "blender_script.py"
 
@@ -77,6 +82,35 @@ BLANK_FRAME_MAX_SPREAD = 24
 
 class LDrawRenderError(Exception):
     """Blender render failed or is unavailable."""
+
+
+# blender_script.py prints one line starting with this after the import: a JSON
+# object whose "missing" list names every file the importer looked for and did
+# not find. The same string is in that script (a test checks).
+REPORT_PREFIX = "LDRAW_MCP_REPORT "
+
+
+@dataclass(frozen=True)
+class RenderResult:
+    """A finished render: the stitched PNG and what is missing from it.
+
+    `missing_files` are the referenced files ImportLDraw could not find and
+    therefore left out of the picture, in the order it looked for them. Empty
+    means every referenced file was found.
+    """
+
+    png: str
+    missing_files: tuple[str, ...]
+
+
+def _read_report(output: str) -> dict | None:
+    """The report blender_script.py printed, or None when it printed none."""
+    lines = [ln for ln in output.splitlines() if ln.startswith(REPORT_PREFIX)]
+    if not lines:
+        return None
+    if len(lines) > 1:
+        raise LDrawRenderError(f"blender reported {len(lines)} times; expected once")
+    return json.loads(lines[0][len(REPORT_PREFIX) :])
 
 
 # Bounds on what a caller may ask Blender for. Below them Blender does not
@@ -145,8 +179,12 @@ def ldraw_library_dir() -> Path | None:
     return None
 
 
+def _disabled() -> bool:
+    return os.environ.get("LDRAW_MCP_DISABLE") == "1"
+
+
 def is_available() -> bool:
-    if os.environ.get("LDRAW_MCP_DISABLE") == "1":
+    if _disabled():
         return False
     return find_blender() is not None and ldraw_library_dir() is not None
 
@@ -159,7 +197,36 @@ def render_ldraw(
     resolution: int = 800,
     timeout: int = 600,
 ) -> str:
-    """Render an .ldr file to a single side-by-side PNG of `azimuths` views."""
+    """Render an .ldr file to a single side-by-side PNG of `azimuths` views.
+
+    Returns the PNG path only. Use `render_ldraw_report` to also learn which
+    referenced files were missing from the library and so from the picture.
+    """
+    return render_ldraw_report(
+        ldr_path,
+        output_png,
+        azimuths=azimuths,
+        samples=samples,
+        resolution=resolution,
+        timeout=timeout,
+    ).png
+
+
+def render_ldraw_report(
+    ldr_path: str,
+    output_png: str,
+    azimuths: Sequence[float] = DEFAULT_AZIMUTHS,
+    samples: int = 32,
+    resolution: int = 800,
+    timeout: int = 600,
+) -> RenderResult:
+    """`render_ldraw`, plus the files ImportLDraw could not find."""
+    # The switch has to stop the render itself: it once only changed what
+    # is_available() reported, and the tools rendered anyway.
+    if _disabled():
+        raise LDrawRenderError(
+            "rendering is disabled (LDRAW_MCP_DISABLE=1); unset it to render"
+        )
     check_render_request(azimuths, samples, resolution)
     blender = find_blender()
     library = ldraw_library_dir()
@@ -202,13 +269,34 @@ def render_ldraw(
                 f"cannot execute blender at {blender!r}: "
                 f"{exc.strerror or exc} (set LDRAW_MCP_BLENDER to the blender binary)"
             ) from exc
+        report = _read_report(proc.stdout)
+        refused = (report or {}).get("refused") or []
+        if refused:
+            # The reference rule refused the model inside Blender. Same check,
+            # same error as bill_of_materials gives for this model.
+            more = f" (and {len(refused) - 1} more)" if len(refused) > 1 else ""
+            raise ldraw_bom.LDrawModelError(refused[0] + more)
         views = [Path(f"{prefix}_{i}.png") for i in range(len(azimuths))]
         missing = [v for v in views if not v.exists()]
         if proc.returncode != 0 or missing:
             tail = "\n".join((proc.stdout + proc.stderr).splitlines()[-15:])
+            not_found = (report or {}).get("missing") or []
+            hint = (
+                f"\nnot found in the LDraw library: {', '.join(not_found)}"
+                if not_found
+                else ""
+            )
             raise LDrawRenderError(
                 f"blender render failed (exit {proc.returncode}, "
-                f"missing {len(missing)} view(s)):\n{tail}"
+                f"missing {len(missing)} view(s)):\n{tail}{hint}"
+            )
+        if report is None:
+            # The views exist, but the script never said what it dropped, so a
+            # missing part would read as a complete picture. Fail loud.
+            raise LDrawRenderError(
+                "blender rendered but the render script did not report which "
+                "referenced files it could not find; blender_script.py and "
+                "render.py are out of step"
             )
         # Checked per view rather than on the stitched result: one blank view
         # beside one good one still stitches into an image full of contrast, so
@@ -221,7 +309,7 @@ def render_ldraw(
                 "empty, hidden, or outside the camera frustum."
             )
         _stitch(views, output_png)
-    return output_png
+    return RenderResult(output_png, tuple(report["missing"]))
 
 
 def _frame_spread(png_path) -> int:

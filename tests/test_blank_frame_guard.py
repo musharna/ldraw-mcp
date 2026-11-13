@@ -60,7 +60,9 @@ def _fake_blender(monkeypatch, tmp_path, sources):
         prefix = cmd[cmd.index("--out") + 1]
         for i, src in enumerate(sources):
             Path(f"{prefix}_{i}.png").write_bytes(Path(src).read_bytes())
-        return subprocess.CompletedProcess(cmd, 0, "", "")
+        # The line blender_script.py prints after a clean import.
+        report = ldraw_render.REPORT_PREFIX + '{"missing": []}\n'
+        return subprocess.CompletedProcess(cmd, 0, report, "")
 
     monkeypatch.setattr(ldraw_render.subprocess, "run", fake_run)
 

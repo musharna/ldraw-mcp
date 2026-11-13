@@ -113,8 +113,12 @@ for obj in scene.objects:
             hi[axis] = max(hi[axis], world[axis])
 
 center = mathutils.Vector([(a + b) / 2 for a, b in zip(lo, hi)])
-span = max(b - a for a, b in zip(lo, hi))
-distance = span * 2.2  # same framing the renderer uses
+# The renderer's own framing, imported rather than restated: a copy here kept
+# saying "same framing the renderer uses" after the renderer changed it.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "ldraw_mcp"))
+from blender_script import framing_distance
+
+distance = framing_distance(lo, hi, bpy.data.cameras.new("Probe"), 1, 1)
 
 
 def visible_faces(azimuth_deg):

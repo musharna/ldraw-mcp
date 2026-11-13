@@ -7,6 +7,37 @@
   pillow 12.3.0 (59 OSV advisories; dependency-audit issue #86). CI drops its
   3.10 job and the tests drop the `tomli` fallback. On 3.10, pip keeps
   resolving to 0.3.1.
+- **Renders no longer crop near-cubic models.** The camera stood 2.2 times the
+  model's longest side away, which does not cover a box's diagonal: a
+  3-brick-high 4x4 cube came back cut off at the left and bottom edges in both
+  default views, as a normal image. The camera now stands where the model's
+  bounding sphere fits the narrower half of the field of view, with a 10%
+  margin, so the model is whole from any azimuth. A single brick comes out
+  about the same size as before; towers and long plates come out larger.
+- **The render tools name parts that are missing from the picture.** A part
+  the LDraw library lacks (a misspelled `3001x_nope.dat`, say) was left out of
+  the render with no warning, while `bill_of_materials` listed it under
+  `parts_not_in_library`. The render now returns the image followed by a text
+  block naming each file the importer could not find. The list comes from the
+  importer's own file lookup inside Blender, so it names exactly what was
+  dropped. A model with every part present returns the image alone. Library
+  callers get the list from the new `render.render_ldraw_report()`;
+  `render_ldraw()` still returns the PNG path.
+- **The render tools refuse the references the parts list refuses.**
+  `bill_of_materials` refused `..\outside\secret.ldr`, but `render_ldraw_file`
+  followed it and drew the outside model, and `render_ldraw_text` followed an
+  absolute path to any existing file. One rule now lives in
+  `bom.check_reference` and `bom.check_inside`: no `..`, `.` or empty segment,
+  no absolute path, drive or `~`, and no file in the model's folder that links
+  outside it. The renderer applies the same two functions inside Blender to
+  every file the importer looks up, and refuses with the parts list's message.
+  Sibling files and library parts are followed as before. Behavior change:
+  `bill_of_materials` now also refuses such names where it used to count them
+  as parts not in the library (an absolute path in inline text, `..\x.dat`).
+- **`LDRAW_MCP_DISABLE=1` now stops renders.** It made `check_renderer` report
+  `available: False`, but the render tools still started Blender and returned
+  a picture. They now refuse with a message naming the variable, before
+  Blender starts.
 
 ## 0.3.1
 

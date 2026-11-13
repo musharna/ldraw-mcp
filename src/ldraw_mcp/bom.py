@@ -62,6 +62,44 @@ def normalise_name(name: str) -> str:
     return name.strip().replace("\\", "/").lower()
 
 
+# --------------------------------------------------------------------------
+# the reference rule, shared with the renderer
+# --------------------------------------------------------------------------
+#
+# A reference is data from the model, and the importer in Blender joins it onto
+# each folder it searches, so `..`, an absolute path or `~` would reach any
+# file the server can read. These two functions are the whole rule. The parts
+# list calls them while it walks a model; blender_script.py imports this file
+# and calls them on every file the importer looks up, so the two tools cannot
+# follow different references. No real LDraw name needs any of the refused
+# forms: library names are relative (`s\3001s01.dat`, `48\4-4cyli.dat`).
+
+
+def check_reference(name: str) -> str:
+    """The normalised name, or LDrawModelError when it could name a path
+    outside the folder it is looked up in."""
+    normal = normalise_name(name)
+    segments = normal.split("/")
+    if (
+        any(seg in ("", ".", "..") for seg in segments)
+        or segments[0].startswith("~")  # expanded to a home folder
+        or ":" in segments[0]  # a drive, `c:`
+    ):
+        raise LDrawModelError(
+            f"reference {normal!r} leaves the model's directory; refusing to follow it"
+        )
+    return normal
+
+
+def check_inside(found: Path, directory: Path, name: str) -> None:
+    """LDrawModelError when `found`, a file in the model's `directory` (already
+    resolved), is a link to somewhere outside it."""
+    if not found.resolve().is_relative_to(directory):
+        raise LDrawModelError(
+            f"reference {name!r} resolves outside the model's directory; refusing to follow it"
+        )
+
+
 def parse_colour_code(token: str) -> int:
     """A colour token: decimal code, or a direct colour `0x2RRGGBB`."""
     text = token.strip().lower()
@@ -181,8 +219,8 @@ class _Model:
     def _sibling(self, name: str) -> str | None:
         """Section key for a sibling model file named `name`, loading it once.
 
-        Only files inside the model's own directory tree are read: a reference
-        is data from the model, and `..\\..\\x.ldr` must not walk out of it.
+        Only files inside the model's own directory tree are read: `name` has
+        passed check_reference, and the file found must pass check_inside.
         """
         if self.directory is None or not name.endswith(_MODEL_SUFFIXES):
             return None
@@ -190,10 +228,6 @@ class _Model:
             return self._loaded_siblings[name]
         found = self.directory
         for segment in name.split("/"):
-            if segment in ("", ".", ".."):
-                raise LDrawModelError(
-                    f"reference {name!r} leaves the model's directory; refusing to follow it"
-                )
             matches = (
                 [c for c in found.iterdir() if c.name.lower() == segment]
                 if found.is_dir()
@@ -203,10 +237,7 @@ class _Model:
                 self._loaded_siblings[name] = None
                 return None
             found = matches[0]
-        if not found.resolve().is_relative_to(self.directory):
-            raise LDrawModelError(
-                f"reference {name!r} resolves outside the model's directory; refusing to follow it"
-            )
+        check_inside(found, self.directory, name)
         key = f"file:{name}"
         sub_main, sub_sections = _split_sections(_read_model(found), name)
         # The sibling's own MPD sections are visible only under its prefix, so
@@ -224,6 +255,8 @@ class _Model:
         """(section key, scope for that section's own references), or None = part."""
         if scope + name in self.sections:
             return scope + name, scope
+        # Not a section of this file: the importer would look it up on disk.
+        check_reference(name)
         key = self._sibling(name)
         if key is None:
             return None

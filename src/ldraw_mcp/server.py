@@ -124,14 +124,33 @@ def _existing_path(path: str) -> Path:
     return p
 
 
-def _render(ldr_path: str, azimuths: str, resolution: int, samples: int) -> Image:
+#: The picture, plus a text block when part of the model is not in it.
+Rendered = list[Image | str]
+
+
+def _missing_files_warning(missing: tuple[str, ...]) -> str:
+    return (
+        f"WARNING: {len(missing)} file(s) the model references could not be found "
+        "in the LDraw library and are missing from this picture: "
+        f"{', '.join(missing)}. Check the names; search_parts finds a part "
+        "number by its description."
+    )
+
+
+def _render(ldr_path: str, azimuths: str, resolution: int, samples: int) -> Rendered:
+    """The image alone when every referenced file was found; otherwise the
+    image and a warning naming the files the importer dropped. A partial
+    picture is still returned: it is the model as far as the library has it."""
     azims = [float(a) for a in azimuths.split(",")]
     with tempfile.TemporaryDirectory() as td:
         out = str(Path(td) / "render.png")
-        ldraw_render.render_ldraw(
+        result = ldraw_render.render_ldraw_report(
             ldr_path, out, azimuths=azims, resolution=resolution, samples=samples
         )
-        return Image(data=Path(out).read_bytes(), format="png")
+        content: Rendered = [Image(data=Path(out).read_bytes(), format="png")]
+    if result.missing_files:
+        content.append(_missing_files_warning(result.missing_files))
+    return content
 
 
 @mcp.tool()
@@ -141,13 +160,15 @@ def render_ldraw_file(
     azimuths: str = "-60,120",
     resolution: int = 640,
     samples: int = 24,
-) -> Image:
+) -> Rendered:
     """Render an LDraw model file (.ldr/.mpd/.dat) to a PNG image.
 
     Views are rendered at each comma-separated azimuth (degrees) and
     stitched side by side. Higher samples = cleaner but slower.
     Bounds: resolution 32..2048 px per view, samples 1..1024, 1..8 azimuths,
     and resolution^2 x samples x views at most 2**27.
+    A referenced file the LDraw library lacks is left out of the picture and
+    named in a text block after the image.
     """
     return _render(str(_existing_path(path)), azimuths, resolution, samples)
 
@@ -159,7 +180,7 @@ def render_ldraw_text(
     azimuths: str = "-60,120",
     resolution: int = 640,
     samples: int = 24,
-) -> Image:
+) -> Rendered:
     """Render inline LDraw content (the text of a .ldr file) to a PNG.
 
     Useful for quick experiments without writing a file first. Same bounds
